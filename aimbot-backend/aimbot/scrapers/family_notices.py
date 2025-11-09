@@ -1,0 +1,102 @@
+import aiohttp
+import asyncio
+from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
+from dataclasses import dataclass
+import re
+from typing import Optional
+
+from aimbot.models.news import FamilyNotice
+
+# Asynchronous Scraper Class
+class FamilyNoticesScraper:
+
+    BASE_URL = "https://familynotices.jerseyeveningpost.com/wp-admin/admin-ajax.php"
+
+    def __init__(self):
+        pass
+
+    async def fetch(self, url, params):
+        """Fetch data with provided parameters."""
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params) as response:
+                response.raise_for_status()
+                return await response.json()
+        
+    async def get_notices(self, start_date: datetime = None, end_date: datetime = None) -> list[FamilyNotice]:
+        """Fetch notices for a given date range (YYYY-MM-DD format)."""
+        # default to today if not provided
+        end_date = end_date or datetime.now().strftime("%Y-%m-%d")
+        start_date = start_date or (datetime.strptime(end_date, "%Y-%m-%d") - timedelta(days=5)).strftime("%Y-%m-%d")
+        if isinstance(start_date, datetime):
+            start_date = start_date.strftime("%Y-%m-%d")
+        if isinstance(end_date, datetime):
+            end_date = end_date.strftime("%Y-%m-%d")
+        # php request params
+        params = {
+            "action": "alm_get_posts",
+            "query_type": "standard",
+            "id": "alm_search",
+            "post_id": "0",
+            "slug": "home",
+            "canonical_url": "https://familynotices.jerseyeveningpost.com/",
+            "posts_per_page": "40",
+            "page": "0",
+            "offset": "0",
+            "post_type": "notice",
+            "repeater": "default",
+            # "seo_start_page": "1",
+            "filters": "true",
+            "filters_startpage": "0",
+            "filters_target": "search",
+            "facets": "false",
+            "theme_repeater": "notice-card.php",
+            "taxonomy": "notice-category",
+            "taxonomy_terms": "deaths",
+            # "taxonomy_operator": "IN",
+            # "taxonomy_include_children": "true",
+            "day": f"{start_date} to {end_date}",
+            "order": "DESC",
+            "orderby": "date",
+        }
+        # fetch data
+        response_data = await self.fetch(self.BASE_URL, params)
+        # parse html response
+        soup = BeautifulSoup(response_data["html"], "html.parser")
+        # return parsed notices
+        notices = self.parse_notices(soup)
+        return notices
+    
+    def parse_notices(self, soup: BeautifulSoup) -> list[FamilyNotice]:
+        """Parse notices from the BeautifulSoup object."""
+        notices = []
+        seen = set()
+        for notice in soup.find_all("div", class_="notice-card"):
+            name = notice.find('h3').text
+            if name in seen:
+                continue
+            seen.add(name)
+            url = notice.find('a').get('href')
+            # get funeral director
+            text = notice.text
+            funeral_director = None
+            if 'Pitcher & Le Quesne' in text:
+                funeral_director = 'Pitcher & Le Quesne Funeral Directors'
+            elif 'Maillards' in text and 'maillard' not in name.lower():
+                funeral_director = 'Maillards Funeral Directors'
+            elif "De Gruchy's Funeral" in text and 'de gruchy' not in name.lower():
+                funeral_director = "De Gruchy's Funeral Care"
+            notices.append(FamilyNotice(name=name, url=url, funeral_director=funeral_director))
+        return notices
+    
+
+if __name__ == "__main__":
+
+    async def main():
+        scraper = FamilyNoticesScraper()
+        results = await scraper.get_notices()
+        for r in results:
+            print(r)
+
+    asyncio.run(main())
+
