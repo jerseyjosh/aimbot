@@ -1,12 +1,14 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Optional
-from bs4 import BeautifulSoup
 import aiohttp
 import random
 import time
 import asyncio
 import logging
+
+from bs4 import BeautifulSoup
+from aiolimiter import AsyncLimiter
 
 from aimbot.scrapers.config import HEADERS
 from aimbot.models.news import NewsStory, FamilyNotice
@@ -29,9 +31,10 @@ class BaseScraper(ABC):
     #   "sports": "https://example.com/sports"
     # }
     sections: dict[str, str]
+    limiter = AsyncLimiter(max_rate=5, time_period=2) # 5 requests every 2 seconds
     
     def __init__(self):
-        pass
+        raise NotImplementedError("BaseScraper is an abstract class and cannot be instantiated directly")
 
     @property
     def available_sections(self) -> List[str]:
@@ -49,11 +52,12 @@ class BaseScraper(ABC):
         cache_buster = f"{separator}_t={int(time.time())}&_r={random.randint(1000, 9999)}"
         url_with_cache_buster = f"{url}{cache_buster}"
         
-        async with aiohttp.ClientSession() as client:
-            async with client.get(url_with_cache_buster, headers=HEADERS) as response:
-                response.raise_for_status()
-                return ScraperResponse(url=url, soup=BeautifulSoup(await response.text(), 'html.parser'))
-            
+        async with self.limiter:
+            async with aiohttp.ClientSession() as client:
+                async with client.get(url_with_cache_buster, headers=HEADERS) as response:
+                    response.raise_for_status()
+                    return ScraperResponse(url=url, soup=BeautifulSoup(await response.text(), 'html.parser'))
+                
     async def fetch_all(self, urls: List[str]) -> List[ScraperResponse]:
         """Fetch multiple URLs concurrently"""
         tasks = [self.fetch(url) for url in urls]
@@ -83,19 +87,8 @@ class BaseScraper(ABC):
     async def fetch_n_stories_for_all_sections(self, limit_per_section: int = 10) -> dict[str, list[NewsStory]]:
         tasks = []
         for section in self.sections.keys():
-            tasks.append(self.fetch_stories_for_section(section, limit_per_section))
+            tasks.append(self.fetch_n_stories_for_section(section, limit_per_section))
         results = await asyncio.gather(*tasks)
         # return dict
         return {section: stories for section, stories in zip(self.sections.keys(), results)}
 
-if __name__ == "__main__":
-
-    import asyncio
-    async def test():
-        scraper = BaseScraper()
-        response = await scraper.fetch("https://www.google.com/")
-        print(f"Fetched URL: {response.url}")
-        print(f"Page Title: {response.soup.title.string if response.soup.title else 'No title found'}")
-    
-    asyncio.run(test())
-           
