@@ -1,12 +1,13 @@
-import json
 import asyncio
 from datetime import datetime
 from enum import Enum
 from typing import Union
+from pathlib import Path
+
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, Response, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -35,14 +36,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files from the built Svelte app
-import os
-from pathlib import Path
-
-# Path to the built Svelte app (adjust as needed)
+# Path to the built Svelte app (we'll mount this at the end)
 static_dir = Path(__file__).parent.parent.parent / "aimbot-frontend" / "build"
-if static_dir.exists():
-    app.mount("/app", StaticFiles(directory=static_dir, html=True), name="static")
 
 class EmailType(str, Enum):
     BE = "be"
@@ -52,10 +47,10 @@ class EmailType(str, Enum):
 
 @app.get('/')
 def root():
-    # Redirect to the Svelte app if it exists, otherwise show API info
+    # Redirect to index.html since static files are mounted at root
     if static_dir.exists():
-        from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/app")
+        from fastapi.responses import FileResponse
+        return FileResponse(static_dir / "index.html")
     return {"message": "Aimbot Backend is running"}
 
 @app.post("/news_stories/", response_model=NewsStory)
@@ -222,3 +217,20 @@ async def generate_radio_news(data: RadioNewsData):
         return Response(content=audio_bytes, media_type="audio/mpeg")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate audio: {str(e)}")
+
+# SPA catch-all route for client-side routing
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    """Serve the SPA for any route that doesn't match API endpoints"""
+    if not static_dir.exists():
+        raise HTTPException(status_code=404, detail="Frontend not found")
+        
+    # If it's a file request (has extension), try to serve it as static
+    if "." in full_path.split("/")[-1]:
+        file_path = static_dir / full_path
+        if file_path.exists():
+            return FileResponse(file_path)
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # For routes without extensions (SPA routes), serve index.html
+    return FileResponse(static_dir / "index.html")

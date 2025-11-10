@@ -3,12 +3,11 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [sveltekit()],
+	base: '/app/',  // Set base path for production builds
 	server: {
 		proxy: {
-			// Proxy API calls to FastAPI during development
-			'/radio': 'http://localhost:8000',
-			'/emails': 'http://localhost:8000',
-			'/news_stories': 'http://localhost:8000'
+			// Proxy everything to FastAPI
+			'/': 'http://localhost:8000'
 		}
 	}
 });

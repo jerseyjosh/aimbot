@@ -9,7 +9,7 @@ class EmailRenderer:
     def __init__(self, template_name: str):
         self.template_name = template_name
         # Get the templates directory relative to this file
-        templates_dir = Path(__file__).parent.parent / "templates"
+        templates_dir = Path(__file__).parent / "templates"
         self.template_loader = jinja2.FileSystemLoader(templates_dir)
         self.template_env = jinja2.Environment(loader=self.template_loader)
         self.template_env.filters["first_sentence"] = self.first_sentence
