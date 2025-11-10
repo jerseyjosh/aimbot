@@ -47,7 +47,7 @@ function createRenderedEmailStore() {
         },
         async render(emailType: string, emailData: any) {
             try {
-                const res = await fetch(`http://localhost:8000/emails/${emailType}/render`, {
+                const res = await fetch(`/emails/${emailType}/render`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"

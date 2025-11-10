@@ -33,6 +33,9 @@
 						<li><a class="dropdown-item" href="/aim_premium">AIM Premium Email</a></li>
 					</ul>
 				</li>
+				<li class="nav-item">
+					<a class="nav-link" href="/radio_news">radio news</a>
+				</li>
 			</ul>
 		</div>
 	</div>

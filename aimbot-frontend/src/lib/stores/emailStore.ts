@@ -55,7 +55,7 @@ function createEmailStore() {
         },
         async fetch(emailType: string = 'be') {
             try {
-                const response = await fetch(`http://localhost:8000/emails/${emailType}`);
+                const response = await fetch(`/emails/${emailType}`);
                 const data = await response.json();
                 update(stores => {
                     saveToStorage(emailType, data);

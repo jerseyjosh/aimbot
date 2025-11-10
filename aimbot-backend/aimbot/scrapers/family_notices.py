@@ -84,7 +84,7 @@ class FamilyNoticesScraper:
                 funeral_director = 'Pitcher & Le Quesne Funeral Directors'
             elif 'Maillards' in text and 'maillard' not in name.lower():
                 funeral_director = 'Maillards Funeral Directors'
-            elif "De Gruchy's Funeral" in text and 'de gruchy' not in name.lower():
+            elif "De Gruchy" in text and 'de gruchy' not in name.lower():
                 funeral_director = "De Gruchy's Funeral Care"
             notices.append(FamilyNotice(name=name, url=url, funeral_director=funeral_director))
         return notices
@@ -97,6 +97,7 @@ if __name__ == "__main__":
         results = await scraper.get_notices()
         for r in results:
             print(r)
+        breakpoint()
 
     asyncio.run(main())
 

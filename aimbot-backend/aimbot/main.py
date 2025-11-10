@@ -6,7 +6,8 @@ from typing import Union
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from aimbot.scrapers.news.be import BEScraper
@@ -18,8 +19,10 @@ from aimbot.scrapers.family_notices import FamilyNoticesScraper
 from aimbot.models.emails import (
     BEEmailData, GEEmailData, JEPEmailData, AIMPremiumEmailData, Foreword
 )
+from aimbot.models.radio import RadioNewsData
 from aimbot.models.news import NewsStory, TopImage
 from aimbot.email_renderer import EmailRenderer
+from aimbot.radio.elabs import ElevenLabs
 
 EmailData = Union[BEEmailData, GEEmailData, JEPEmailData, AIMPremiumEmailData]
 
@@ -32,6 +35,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount static files from the built Svelte app
+import os
+from pathlib import Path
+
+# Path to the built Svelte app (adjust as needed)
+static_dir = Path(__file__).parent.parent.parent / "aimbot-frontend" / "build"
+if static_dir.exists():
+    app.mount("/app", StaticFiles(directory=static_dir, html=True), name="static")
+
 class EmailType(str, Enum):
     BE = "be"
     GE = "ge"
@@ -40,6 +52,10 @@ class EmailType(str, Enum):
 
 @app.get('/')
 def root():
+    # Redirect to the Svelte app if it exists, otherwise show API info
+    if static_dir.exists():
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/app")
     return {"message": "Aimbot Backend is running"}
 
 @app.post("/news_stories/", response_model=NewsStory)
@@ -174,3 +190,35 @@ async def render_email(email_type: EmailType, email_data: EmailData):
         return HTMLResponse(content=html)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to render email: {str(e)}")
+
+@app.get("/radio/speakers")
+async def get_speakers() -> list[str]:
+    """Return a list of available speakers for TTS"""
+    elabs = ElevenLabs()
+    voice_to_id = elabs.get_voice_to_id()
+    return list(voice_to_id.keys())
+
+@app.get("/radio/script")
+async def fetch_radio_script(speaker: str) -> RadioNewsData:
+    """Fetch radio news data and generate initial script"""
+    from aimbot.radio.radio_news import RadioNews
+    
+    try:
+        radio = RadioNews(speaker=speaker)
+        data = await radio.get_data()
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch radio script: {str(e)}")
+
+@app.post("/radio/generate")
+async def generate_radio_news(data: RadioNewsData):
+    """Generate radio news data for a specific speaker"""
+    elabs = ElevenLabs()
+    voice_to_id = elabs.get_voice_to_id()
+    if data.speaker_id not in voice_to_id:
+        raise HTTPException(status_code=400, detail=f"Speaker {data.speaker_id} not found among custom voices: {list(voice_to_id.keys())}")
+    try:
+        audio_bytes = elabs.generate(text=data.script, voice=data.speaker_id)
+        return Response(content=audio_bytes, media_type="audio/mpeg")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate audio: {str(e)}")

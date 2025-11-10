@@ -87,7 +87,7 @@
         
         fetchingStory = true;
         try {
-            const res = await fetch(`http://localhost:8000/news_stories/?url=${encodeURIComponent(storyUrl)}`, {
+            const res = await fetch(`/news_stories/?url=${encodeURIComponent(storyUrl)}`, {
                 method: "POST"
             });
             
@@ -115,51 +115,52 @@
     }
 </script>
 
-<!-- Title -->
-<h1>{displayName}</h1>
+<div class="container-fluid mt-4" style="max-width: 1400px; margin: 0 auto;">
+    
+    
+    <!-- Title -->
+    <h1>{displayName}</h1>
 
-<!-- Fetch and render buttons -->
-<div class="row">
-    <div class="mb-3">
-        <button 
-            class="btn btn-primary" 
-            on:click={fetchEmailData}
-            disabled={fetchingData}>
-            {fetchingData ? 'Fetching...' : 'Fetch Email Data'}
-        </button>
-        
-        {#if emailData}
-            <button 
-                class="btn btn-info ms-2" 
-                on:click={openAddStoryModal}>
-                + Add Story by URL
-            </button>
-        {/if}
-    </div>
-</div>
-
-<!-- Email not loaded warning -->
-{#if !emailData}
-    <div class="alert alert-warning" role="alert">
-        No email data loaded. Click "Fetch Email Data" to load data from the backend.
-    </div>
-{:else}
-
-<!-- Two column structure -->
-<div class="container-fluid">
+    <!-- Fetch and render buttons -->
     <div class="row">
-        <!-- Data Input -->
-        <div class="col-md-6">
-            <!-- Field navbar -->
-            <div class="nav nav-tabs">
-                {#each Object.keys(emailData) as field}
-                    <button 
-                        class="nav-link {field === activeField ? 'active' : ''}" 
-                        on:click={() => activeField = field}>
-                        {field}
-                    </button>
-                {/each}
-            </div>
+        <div class="mb-3">
+            <button 
+                class="btn btn-primary" 
+                on:click={fetchEmailData}
+                disabled={fetchingData}>
+                {fetchingData ? 'Fetching...' : 'Fetch Email Data'}
+            </button>
+            
+            {#if emailData}
+                <button 
+                    class="btn btn-info ms-2" 
+                    on:click={openAddStoryModal}>
+                    + Add Story by URL
+                </button>
+            {/if}
+        </div>
+    </div>
+
+    <!-- Email not loaded warning -->
+    {#if !emailData}
+        <div class="alert alert-warning" role="alert">
+            No email data loaded. Click "Fetch Email Data" to load data from the backend.
+        </div>
+    {:else}
+
+    <!-- Two column structure -->
+    <div class="row">
+    <div class="col-md-6">
+        <!-- Field navbar -->
+        <div class="nav nav-tabs">
+            {#each Object.keys(emailData) as field}
+                <button 
+                    class="nav-link {field === activeField ? 'active' : ''}" 
+                    on:click={() => activeField = field}>
+                    {field}
+                </button>
+            {/each}
+        </div>
 
             <!-- Field editor -->
             <div class="mt-3">
@@ -237,7 +238,6 @@
             </iframe>
         </div>
     </div>
-</div>
 
 {/if}
 
@@ -291,6 +291,8 @@
         </div>
     </div>
 {/if}
+
+</div>
 
 <style>
     .modal-backdrop {

@@ -54,8 +54,7 @@ class Foreword(BaseModel):
             author = "",
             job_title = "",
             image_url = "",
-            text = 
-                "Welcome to the latest edition of AIM Premium. We're excited to bring you the most recent news and insights."
+            text = ""
         )
 
 

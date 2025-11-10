@@ -21,9 +21,21 @@ class EmailRenderer:
 
     @staticmethod
     def first_sentence(text: Optional[str]) -> str:
-        """Extract the first sentence from a string, for passing to Jinja"""
+        """Extract the first sentence from a string, handling decimal numbers properly"""
         if not text:
             return ""
-        first = text.split(".")[0]
-        return first + "." if first and not first.endswith(".") else first
+        
+        # Find periods that are likely sentence endings (followed by space and capital letter or end of string)
+        import re
+        
+        # Look for period followed by space and capital letter, or period at end of string
+        # But not period between digits (decimal numbers)
+        sentence_end_pattern = r'\.(?=\s+[A-Z]|$)(?!\d)'
+        
+        match = re.search(sentence_end_pattern, text)
+        if match:
+            return text[:match.end()]
+        else:
+            # No sentence ending found, return the whole text
+            return text
     
