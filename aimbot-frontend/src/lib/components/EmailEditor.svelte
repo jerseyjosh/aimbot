@@ -1,7 +1,4 @@
 <script lang='ts'>
-
-    import { emailStore } from '$lib/stores/emailStore';
-    import { renderedEmailStore } from '$lib/stores/renderedEmailStore';
     import ArrayEditor from '$lib/components/ArrayEditor.svelte';
     import type { components } from '$lib/types/api';
 
@@ -11,11 +8,9 @@
     export let emailType: string;
     export let displayName: string;
 
-    // Get data for this email type from the store
-    $: emailData = $emailStore[emailType];
-    $: renderedEmail = $renderedEmailStore[emailType] || "";
-
     // State
+    let emailData: any = null;
+    let renderedEmail: string = "";
     let activeField: string = "";
     let fetchingData: boolean = false;
     let renderingData: boolean = false;
@@ -28,9 +23,9 @@
 
     // Get all fields that contain NewsStory arrays
     $: newsStoryFields = emailData ? Object.keys(emailData).filter(
-        key => Array.isArray((emailData as any)[key]) && 
-               (emailData as any)[key].length > 0 && 
-               'headline' in ((emailData as any)[key][0] as any)
+        key => Array.isArray(emailData[key]) && 
+               emailData[key].length > 0 && 
+               'headline' in emailData[key][0]
     ) : [];
 
     // Set initial active field when data loads
@@ -42,12 +37,17 @@
     async function fetchEmailData() {
         fetchingData = true;
         try {
-            await emailStore.fetch(emailType);
+            const response = await fetch(`/api/emails/${emailType}`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch email data: ${response.statusText}`);
+            }
+            emailData = await response.json();
             if (emailData) {
                 activeField = Object.keys(emailData)[0];
             }
         } catch (error) {
             console.error("Error fetching email data:", error);
+            alert("Failed to fetch email data");
         } finally {
             fetchingData = false;
         }
@@ -59,9 +59,22 @@
         
         renderingData = true;
         try {
-            await renderedEmailStore.render(emailType, emailData);
+            const response = await fetch(`/api/emails/${emailType}/render`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(emailData)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to render email: ${response.statusText}`);
+            }
+            
+            renderedEmail = await response.text();
         } catch (error) {
             console.error("Error rendering email:", error);
+            alert("Failed to render email");
         } finally {
             renderingData = false;
         }
@@ -87,7 +100,7 @@
         
         fetchingStory = true;
         try {
-            const res = await fetch(`/news_stories/?url=${encodeURIComponent(storyUrl)}`, {
+            const res = await fetch(`/api/news_stories/?url=${encodeURIComponent(storyUrl)}`, {
                 method: "POST"
             });
             
@@ -100,9 +113,9 @@
             const story: NewsStory = await res.json();
             
             // Add story to the selected field
-            if (emailData && Array.isArray((emailData as any)[selectedStoryField])) {
-                ((emailData as any)[selectedStoryField] as any[]).push(story);
-                emailStore.set(emailType, emailData);
+            if (emailData && Array.isArray(emailData[selectedStoryField])) {
+                emailData[selectedStoryField].push(story);
+                emailData = emailData; // Trigger reactivity
             }
             
             closeAddStoryModal();
@@ -166,24 +179,24 @@
             <div class="mt-3">
                 <label for="fieldTextarea" class="form-label">{activeField}</label>
                 
-                {#if typeof (emailData as any)[activeField] === 'string'}
+                {#if typeof emailData[activeField] === 'string'}
                     <!-- Simple text box if data type is string -->
                     <textarea 
                         id="fieldTextarea"
                         class="form-control" 
                         rows="10"
-                        bind:value={(emailData as any)[activeField]}>
+                        bind:value={emailData[activeField]}>
                     </textarea>
 
-                {:else if Array.isArray((emailData as any)[activeField])}
+                {:else if Array.isArray(emailData[activeField])}
                     <!-- Data editor for list of objects -->
                     <ArrayEditor 
-                        items={(emailData as any)[activeField]} 
+                        items={emailData[activeField]} 
                         itemTemplate={activeField.includes('advert') ? { url: '', image_url: '' } : null} />
 
-                {:else if typeof (emailData as any)[activeField] === 'object' && (emailData as any)[activeField] !== null}
+                {:else if typeof emailData[activeField] === 'object' && emailData[activeField] !== null}
                     <!-- Object editor for single objects with multiple fields -->
-                    {#each Object.entries((emailData as any)[activeField]) as [key, value]}
+                    {#each Object.entries(emailData[activeField]) as [key, value]}
                         <div class="mb-2">
                             <label class="form-label" for="field-{key}">{key}</label>
                             {#if typeof value === 'string' && (value.includes('\n') || value.length > 100)}
@@ -191,14 +204,14 @@
                                     id="field-{key}"
                                     class="form-control"
                                     rows="4"
-                                    bind:value={((emailData as any)[activeField] as any)[key]}>
+                                    bind:value={emailData[activeField][key]}>
                                 </textarea>
                             {:else}
                                 <input 
                                     id="field-{key}"
                                     type="text" 
                                     class="form-control"
-                                    bind:value={((emailData as any)[activeField] as any)[key]} />
+                                    bind:value={emailData[activeField][key]} />
                             {/if}
                         </div>
                     {/each}

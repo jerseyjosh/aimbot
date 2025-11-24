@@ -25,6 +25,7 @@
 	"dependencies": {
 		"@types/lodash": "^4.17.20",
 		"bootstrap": "^5.3.8",
+		"bootswatch": "^5.3.8",
 		"lodash": "^4.17.21"
 	}
 }

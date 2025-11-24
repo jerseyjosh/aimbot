@@ -21,7 +21,7 @@
         isLoadingSpeakers = true;
         errorMessage = "";
         try {
-            const res = await fetch('/radio/speakers');
+            const res = await fetch('api/radio/speakers');
             if (!res.ok) throw new Error('Failed to fetch speakers');
             speakers = await res.json();
             if (speakers.length > 0) {
@@ -45,7 +45,7 @@
         isFetchingScript = true;
         errorMessage = "";
         try {
-            const res = await fetch(`/radio/script?speaker=${encodeURIComponent(selectedSpeaker)}`);
+            const res = await fetch(`/api/radio/script?speaker=${encodeURIComponent(selectedSpeaker)}`);
             if (!res.ok) throw new Error('Failed to fetch script');
             const data = await res.json();
             script = data.script;
@@ -74,7 +74,7 @@
         }
 
         try {
-            const res = await fetch('/radio/generate', {
+            const res = await fetch('/api/radio/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

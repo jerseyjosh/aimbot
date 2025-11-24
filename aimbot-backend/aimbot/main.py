@@ -24,10 +24,16 @@ from aimbot.models.radio import RadioNewsData
 from aimbot.models.news import NewsStory, TopImage
 from aimbot.email_renderer import EmailRenderer
 from aimbot.radio.elabs import ElevenLabs
+from aimbot.cache import EmailCache, merge_with_cache
 
 EmailData = Union[BEEmailData, GEEmailData, JEPEmailData, AIMPremiumEmailData]
 
 app = FastAPI()
+
+# Create API router with /api prefix
+from fastapi import APIRouter
+api_router = APIRouter(prefix="/api")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,21 +45,16 @@ app.add_middleware(
 # Path to the built Svelte app (we'll mount this at the end)
 static_dir = Path(__file__).parent.parent.parent / "aimbot-frontend" / "build"
 
+# Point email cache to same directory as main.py
+email_cache = EmailCache(cache_dir=str(Path(__file__).parent / "cache"))
+
 class EmailType(str, Enum):
     BE = "be"
     GE = "ge"
     JEP = "jep"
     AIMPremium = "aimpremium"
 
-@app.get('/')
-def root():
-    # Redirect to index.html since static files are mounted at root
-    if static_dir.exists():
-        from fastapi.responses import FileResponse
-        return FileResponse(static_dir / "index.html")
-    return {"message": "Aimbot Backend is running"}
-
-@app.post("/news_stories/", response_model=NewsStory)
+@api_router.post("/news_stories/", response_model=NewsStory)
 async def get_news_story(url: str):
     """
     Scrape a single story from a URL
@@ -70,42 +71,50 @@ async def get_news_story(url: str):
     else:
         raise HTTPException(status_code=400, detail=f"Unknown news source. Supported: bailiwickexpress.com, jerseyeveningpost.com")
 
-@app.get("/emails/{email_type}", response_model=EmailData)
+@api_router.get("/emails/{email_type}", response_model=EmailData)
 async def fetch_email(email_type: EmailType):
-    """Fetch email data for a specific email type"""
+    """Fetch email data for a specific email type, merging fresh scraped data with cached user edits"""
+    
+    # Load cached data
+    cached_data = email_cache.load(email_type.value)
     
     if email_type == EmailType.BE:
+
         scraper = BEScraper()
         weather_scraper = WeatherScraper.Jsy()
         fn_scraper = FamilyNoticesScraper()
         
         tasks = {
             "news_stories": scraper.fetch_n_stories_for_section("news", limit=5),
-            "sports_stories": scraper.fetch_n_stories_for_section("sport", limit=5),
+            "sports_stories": scraper.fetch_n_stories_for_section("sport", limit=2),
             "business_stories": scraper.fetch_n_stories_for_section("business", limit=5),
-            "community_stories": scraper.fetch_n_stories_for_section("community", limit=5),
-            "podcast_stories": scraper.fetch_n_stories_for_section("podcasts", limit=5),
+            "community_stories": scraper.fetch_n_stories_for_section("community", limit=2),
+            "podcast_stories": scraper.fetch_n_stories_for_section("podcasts", limit=2),
             "family_notices": fn_scraper.get_notices(),
             "weather": weather_scraper.get_weather()
         }
         results = await asyncio.gather(*tasks.values())
         results = dict(zip(tasks.keys(), results))
 
-        email_data = BEEmailData(
-            top_image = TopImage(url = "", image_url = ""),
-            tides = results['weather'].tides,
-            weather = results['weather'].weather,
-            date = datetime.now().strftime("%-d %B %Y"),
-            news_stories = results.get('news_stories', []),
-            horizontal_adverts = [],
-            vertical_adverts = [],
-            sports_stories = results.get('sports_stories', []),
-            business_stories = results.get('business_stories', []),
-            connect_image_url = "",
-            community_stories = results.get('community_stories', []),
-            podcast_stories = results.get('podcast_stories', []),
-            family_notices = results.get('family_notices', [])
-        )
+        fresh_data = {
+            "top_image": TopImage(url="", image_url=""),
+            "tides": results['weather'].tides,
+            "weather": results['weather'].weather,
+            "date": datetime.now().strftime("%-d %B %Y"),
+            "news_stories": results.get('news_stories', []),
+            "horizontal_adverts": [],
+            "vertical_adverts": [],
+            "sports_stories": results.get('sports_stories', []),
+            "business_stories": results.get('business_stories', []),
+            "connect_image_url": "",
+            "community_stories": results.get('community_stories', []),
+            "podcast_stories": results.get('podcast_stories', []),
+            "family_notices": results.get('family_notices', [])
+        }
+        
+        # Merge with cached user edits
+        merged_data = merge_with_cache(email_type.value, fresh_data, cached_data)
+        email_data = BEEmailData(**merged_data)
         return email_data
     
     elif email_type == EmailType.GE:
@@ -113,57 +122,72 @@ async def fetch_email(email_type: EmailType):
         weather_scraper = WeatherScraper.Gsy()
         tasks = {
             "news_stories": scraper.fetch_n_stories_for_section("news", limit=5),
-            "sports_stories": scraper.fetch_n_stories_for_section("sport", limit=5),
+            "sports_stories": scraper.fetch_n_stories_for_section("sport", limit=2),
             "business_stories": scraper.fetch_n_stories_for_section("business", limit=5),
-            "community_stories": scraper.fetch_n_stories_for_section("community", limit=5),
-            "podcast_stories": scraper.fetch_n_stories_for_section("podcasts", limit=5),
+            "community_stories": scraper.fetch_n_stories_for_section("community", limit=2),
+            "podcast_stories": scraper.fetch_n_stories_for_section("podcasts", limit=2),
             "weather": weather_scraper.get_weather()
         }
         results = await asyncio.gather(*tasks.values())
         results = dict(zip(tasks.keys(), results))
-        email_data = GEEmailData(
-            top_image = TopImage(url = "", image_url = ""),
-            tides = results['weather'].tides,
-            weather = results['weather'].weather,
-            date = datetime.now().strftime("%-d %B %Y"),
-            news_stories = results.get('news_stories', []),
-            horizontal_adverts = [],
-            vertical_adverts = [],
-            sports_stories = results.get('sports_stories', []),
-            business_stories = results.get('business_stories', []),
-            connect_image_url = "",
-            community_stories = results.get('community_stories', []),
-            podcast_stories = results.get('podcast_stories', [])
-        )
+        
+        fresh_data = {
+            "top_image": TopImage(url="", image_url=""),
+            "tides": results['weather'].tides,
+            "weather": results['weather'].weather,
+            "date": datetime.now().strftime("%-d %B %Y"),
+            "news_stories": results.get('news_stories', []),
+            "horizontal_adverts": [],
+            "vertical_adverts": [],
+            "sports_stories": results.get('sports_stories', []),
+            "business_stories": results.get('business_stories', []),
+            "connect_image_url": "",
+            "community_stories": results.get('community_stories', []),
+            "podcast_stories": results.get('podcast_stories', [])
+        }
+        
+        # Merge with cached user edits
+        merged_data = merge_with_cache(email_type.value, fresh_data, cached_data)
+        email_data = GEEmailData(**merged_data)
         return email_data
     
     elif email_type == EmailType.JEP:
 
         scraper = JEPScraper()
         news_stories = await scraper.fetch_n_stories_for_section("news")
-        email_data = JEPEmailData(
-            cover_image_url = "",
-            date = datetime.now().strftime("%-d %B %Y"),
-            news_stories = news_stories,
-            adverts = []
-        )
+        
+        fresh_data = {
+            "cover_image_url": "",
+            "date": datetime.now().strftime("%-d %B %Y"),
+            "news_stories": news_stories,
+            "adverts": []
+        }
+        
+        # Merge with cached user edits
+        merged_data = merge_with_cache(email_type.value, fresh_data, cached_data)
+        email_data = JEPEmailData(**merged_data)
         return email_data 
 
     elif email_type == EmailType.AIMPremium:
 
         scraper = JEPScraper()
         news_stories = await scraper.fetch_n_stories_for_section("premium")
-        email_data = AIMPremiumEmailData(
-            title = "",
-            news_stories = news_stories,
-            foreword = Foreword.default(),
-        )
+        
+        fresh_data = {
+            "title": "",
+            "news_stories": news_stories,
+            "foreword": Foreword.default(),
+        }
+        
+        # Merge with cached user edits
+        merged_data = merge_with_cache(email_type.value, fresh_data, cached_data)
+        email_data = AIMPremiumEmailData(**merged_data)
         return email_data
     
     else:
         raise HTTPException(status_code=400, detail=f"Unknown email type: {email_type}")
 
-@app.post("/emails/{email_type}/render", response_class=HTMLResponse)
+@api_router.post("/emails/{email_type}/render", response_class=HTMLResponse)
 async def render_email(email_type: EmailType, email_data: EmailData):
     """Render email data to HTML using the appropriate template"""
     
@@ -182,18 +206,22 @@ async def render_email(email_type: EmailType, email_data: EmailData):
     try:
         renderer = EmailRenderer(template_name=template_name)
         html = renderer.render(email_data.model_dump())
+        
+        # Cache the email data for future fetches
+        email_cache.save(email_type.value, email_data.model_dump())
+        
         return HTMLResponse(content=html)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to render email: {str(e)}")
 
-@app.get("/radio/speakers")
+@api_router.get("/radio/speakers")
 async def get_speakers() -> list[str]:
     """Return a list of available speakers for TTS"""
     elabs = ElevenLabs()
     voice_to_id = elabs.get_voice_to_id()
     return list(voice_to_id.keys())
 
-@app.get("/radio/script")
+@api_router.get("/radio/script")
 async def fetch_radio_script(speaker: str) -> RadioNewsData:
     """Fetch radio news data and generate initial script"""
     from aimbot.radio.radio_news import RadioNews
@@ -205,7 +233,7 @@ async def fetch_radio_script(speaker: str) -> RadioNewsData:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch radio script: {str(e)}")
 
-@app.post("/radio/generate")
+@api_router.post("/radio/generate")
 async def generate_radio_news(data: RadioNewsData):
     """Generate radio news data for a specific speaker"""
     elabs = ElevenLabs()
@@ -218,19 +246,21 @@ async def generate_radio_news(data: RadioNewsData):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate audio: {str(e)}")
 
-# SPA catch-all route for client-side routing
-@app.get("/{full_path:path}")
-async def serve_spa(full_path: str):
-    """Serve the SPA for any route that doesn't match API endpoints"""
-    if not static_dir.exists():
-        raise HTTPException(status_code=404, detail="Frontend not found")
-        
-    # If it's a file request (has extension), try to serve it as static
-    if "." in full_path.split("/")[-1]:
-        file_path = static_dir / full_path
-        if file_path.exists():
-            return FileResponse(file_path)
-        raise HTTPException(status_code=404, detail="File not found")
+# Include the API router
+app.include_router(api_router)
+
+# Mount static files and SPA routing only in production (when build exists)
+if static_dir.exists():
+    # Mount static assets (with lower priority than API routes)
+    app.mount("/_app", StaticFiles(directory=str(static_dir / "_app")), name="assets")
     
-    # For routes without extensions (SPA routes), serve index.html
-    return FileResponse(static_dir / "index.html")
+    # Catch-all route for SPA - must be defined last
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        """Serve the SPA for all non-API routes"""
+        # If the path points to an actual file, serve it
+        file_path = static_dir / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        # Otherwise, serve index.html and let the SPA handle routing
+        return FileResponse(static_dir / "index.html")

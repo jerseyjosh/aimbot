@@ -1,7 +1,13 @@
 <script lang="ts">
+
 	import { onMount } from 'svelte';
 	import favicon from '$lib/assets/favicon.svg';
-	import 'bootstrap/dist/css/bootstrap.min.css';
+	import aim_logo from '$lib/assets/aim_logo.png';
+
+	// import 'bootstrap/dist/css/bootstrap.min.css';
+	import 'bootswatch/dist/brite/bootstrap.min.css';
+	// import 'bootswatch/dist/journal/bootstrap.min.css';
+
 	let { children } = $props();
 	onMount(() => {
 		// Bootstrap JS (for dropdowns, etc.)
@@ -14,9 +20,9 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
+<nav class="navbar navbar-expand-lg bg-primary" data-bs-theme="light">
 	<div class="container-fluid">
-		<a class="navbar-brand" href="/">aimbot</a>
+		<a class="navbar-brand" href="/"><img src={aim_logo} alt="aimbot logo" height="60"/></a>
 		<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
 			<span class="navbar-toggler-icon"></span>
 		</button>
