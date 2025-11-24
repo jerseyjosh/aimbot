@@ -14,7 +14,7 @@ class GEScraper(BaseScraper):
     """Scraper for Bailiwick Express Guernsey"""
 
     sections: dict[str, str] = {
-        "news": "https://www.bailiwickexpress.com/bailiwickexpress-guernsey-edition/",
+        "news": "https://www.bailiwickexpress.com/news-guernsey/",
         "business": "https://www.bailiwickexpress.com/gsy-business/",
         "sport": "https://www.bailiwickexpress.com/gsy-sport/",
         "opinion": "https://www.bailiwickexpress.com/opinion-guernsey/",
