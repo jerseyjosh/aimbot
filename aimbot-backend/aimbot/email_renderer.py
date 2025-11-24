@@ -1,5 +1,6 @@
 from typing import Union, Optional
 from pathlib import Path
+import re
 
 from pydantic import BaseModel
 
@@ -25,12 +26,9 @@ class EmailRenderer:
         if not text:
             return ""
         
-        # Find periods that are likely sentence endings (followed by space and capital letter or end of string)
-        import re
-        
-        # Look for period followed by space and capital letter, or period at end of string
-        # But not period between digits (decimal numbers)
-        sentence_end_pattern = r'\.(?=\s+[A-Z]|$)(?!\d)'
+        # Look for period followed by whitespace (including zero-width chars) and capital letter, 
+        # or period at end of string. But not period between digits (decimal numbers)
+        sentence_end_pattern = r'\.(?=[\s\u200b]+[A-Z]|$)(?!\d)'
         
         match = re.search(sentence_end_pattern, text)
         if match:
@@ -38,4 +36,3 @@ class EmailRenderer:
         else:
             # No sentence ending found, return the whole text
             return text
-    
