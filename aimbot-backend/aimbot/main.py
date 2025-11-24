@@ -85,9 +85,9 @@ async def fetch_email(email_type: EmailType):
         fn_scraper = FamilyNoticesScraper()
         
         tasks = {
-            "news_stories": scraper.fetch_n_stories_for_section("news", limit=5),
+            "news_stories": scraper.fetch_n_stories_for_section("news", limit=10),
             "sports_stories": scraper.fetch_n_stories_for_section("sport", limit=2),
-            "business_stories": scraper.fetch_n_stories_for_section("business", limit=5),
+            "business_stories": scraper.fetch_n_stories_for_section("business", limit=2),
             "community_stories": scraper.fetch_n_stories_for_section("community", limit=2),
             "podcast_stories": scraper.fetch_n_stories_for_section("podcasts", limit=2),
             "family_notices": fn_scraper.get_notices(),
@@ -121,9 +121,9 @@ async def fetch_email(email_type: EmailType):
         scraper = GEScraper()
         weather_scraper = WeatherScraper.Gsy()
         tasks = {
-            "news_stories": scraper.fetch_n_stories_for_section("news", limit=5),
+            "news_stories": scraper.fetch_n_stories_for_section("news", limit=10),
             "sports_stories": scraper.fetch_n_stories_for_section("sport", limit=2),
-            "business_stories": scraper.fetch_n_stories_for_section("business", limit=5),
+            "business_stories": scraper.fetch_n_stories_for_section("business", limit=2),
             "community_stories": scraper.fetch_n_stories_for_section("community", limit=2),
             "podcast_stories": scraper.fetch_n_stories_for_section("podcasts", limit=2),
             "weather": weather_scraper.get_weather()

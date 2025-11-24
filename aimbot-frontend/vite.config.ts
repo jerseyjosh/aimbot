@@ -5,11 +5,10 @@ export default defineConfig({
 	plugins: [sveltekit()],
 	server: {
 		proxy: {
-			// Proxy all /api/* calls to FastAPI backend, stripping /api prefix
+			// Proxy all /api/* calls to FastAPI backend
 			'/api': {
 				target: 'http://localhost:8000',
-				changeOrigin: true,
-				rewrite: (path) => path.replace(/^\/api/, '')
+				changeOrigin: true
 			}
 		}
 	}
