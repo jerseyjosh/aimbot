@@ -22,8 +22,8 @@ class Advert(BaseModel):
 class FamilyNotice(BaseModel):
     name: str
     url: str
-    funeral_director: Optional[str] = None
-    additional_text: Optional[str] = None
+    funeral_director: str = ""
+    additional_text: str = ""
 
 class TopImage(BaseModel):
     url: str

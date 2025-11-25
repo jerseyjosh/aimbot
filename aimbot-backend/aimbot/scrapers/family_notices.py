@@ -105,7 +105,7 @@ class FamilyNoticesScraper:
             url = notice.find('a').get('href')
             # get funeral director
             text = notice.text
-            funeral_director = None
+            funeral_director = ""
             if 'Pitcher & Le Quesne' in text:
                 funeral_director = 'Pitcher & Le Quesne Funeral Directors'
             elif 'Maillards' in text and 'maillard' not in name.lower():
