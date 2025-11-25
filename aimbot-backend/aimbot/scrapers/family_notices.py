@@ -67,6 +67,32 @@ class FamilyNoticesScraper:
         notices = self.parse_notices(soup)
         return notices
     
+    @staticmethod
+    def format_name(name: str) -> str:
+        """
+        Formats a name from 'Last, First (Extra1) (Extra2)' to 'First Last (Extra1) (Extra2)'.
+        Handles multiple parenthetical parts.
+        """
+        # Extract all bracketed parts
+        bracketed_parts = re.findall(r"\(.*?\)", name)
+        
+        # Remove bracketed parts from the main name
+        name_without_brackets = re.sub(r"\(.*?\)", "", name).strip()
+        
+        # Handle "Last, First" format
+        if "," in name_without_brackets:
+            last, first = [part.strip() for part in name_without_brackets.split(",", 1)]
+            formatted_name = f"{first} {last}"
+        else:
+            formatted_name = name_without_brackets  # If no comma, assume already correct
+
+        # Append all extracted bracketed parts at the end
+        if bracketed_parts:
+            formatted_name = f"{formatted_name} {' '.join(bracketed_parts)}"
+
+        # Capitalize first letter of each word, except for 'née'
+        return formatted_name.title().replace('Née', 'née')
+    
     def parse_notices(self, soup: BeautifulSoup) -> list[FamilyNotice]:
         """Parse notices from the BeautifulSoup object."""
         notices = []
@@ -86,7 +112,7 @@ class FamilyNoticesScraper:
                 funeral_director = 'Maillards Funeral Directors'
             elif "De Gruchy" in text and 'de gruchy' not in name.lower():
                 funeral_director = "De Gruchy's Funeral Care"
-            notices.append(FamilyNotice(name=name, url=url, funeral_director=funeral_director))
+            notices.append(FamilyNotice(name=self.format_name(name), url=url, funeral_director=funeral_director))
         return notices
     
 
@@ -94,7 +120,7 @@ if __name__ == "__main__":
 
     async def main():
         scraper = FamilyNoticesScraper()
-        results = await scraper.get_notices()
+        results = await scraper.get_notices(start_date='2025-10-01', end_date='2025-12-05')
         for r in results:
             print(r)
         breakpoint()

@@ -80,6 +80,32 @@
         }
     }
 
+    // Save email data to cache
+    let savingData = false;
+    async function saveEmail() {
+        if (!emailData) return;
+        
+        savingData = true;
+        try {
+            const response = await fetch(`/api/emails/${emailType}/save`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(emailData)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to save email: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error("Error saving email:", error);
+            alert("Failed to save email data");
+        } finally {
+            savingData = false;
+        }
+    }
+
     // Open add story modal
     function openAddStoryModal() {
         showAddStoryModal = true;
@@ -227,6 +253,12 @@
                     on:click={renderEmail}
                     disabled={renderingData || !emailData}>
                     {renderingData ? 'Rendering...' : 'Render Email'}
+                </button>
+                <button 
+                    class="btn btn-primary btn-sm ms-2"
+                    on:click={saveEmail}
+                    disabled={savingData || !emailData}>
+                    {savingData ? 'Saving...' : 'Save Ads'}
                 </button>
                 <button 
                     class="btn btn-secondary btn-sm ms-2"

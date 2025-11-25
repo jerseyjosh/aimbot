@@ -75,10 +75,8 @@
 
     // Delete a row
     function deleteRow(index: number) {
-        if (confirm('Are you sure you want to delete this item?')) {
-            items.splice(index, 1);
-            items = items; // Trigger reactivity
-        }
+        items.splice(index, 1);
+        items = items; // Trigger reactivity
     }
 
     // Add a new row

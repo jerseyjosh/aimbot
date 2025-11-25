@@ -207,12 +207,21 @@ async def render_email(email_type: EmailType, email_data: EmailData):
         renderer = EmailRenderer(template_name=template_name)
         html = renderer.render(email_data.model_dump())
         
-        # Cache the email data for future fetches
-        email_cache.save(email_type.value, email_data.model_dump())
-        
         return HTMLResponse(content=html)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to render email: {str(e)}")
+
+@api_router.post("/emails/{email_type}/save")
+async def save_email(email_type: EmailType, email_data: EmailData):
+    """Save email data to cache for future fetches"""
+    try:
+        success = email_cache.save(email_type.value, email_data.model_dump())
+        if success:
+            return {"status": "success", "message": f"Email data saved to cache"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to save email data")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save email: {str(e)}")
 
 @api_router.get("/radio/speakers")
 async def get_speakers() -> list[str]:
