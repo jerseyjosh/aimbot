@@ -21,7 +21,7 @@ from aimbot.models.emails import (
     BEEmailData, GEEmailData, JEPEmailData, AIMPremiumEmailData, Foreword
 )
 from aimbot.models.radio import RadioNewsData
-from aimbot.models.news import NewsStory, TopImage
+from aimbot.models.news import Advert, NewsStory, TopImage
 from aimbot.email_renderer import EmailRenderer
 from aimbot.radio.elabs import ElevenLabs
 from aimbot.cache import EmailCache, merge_with_cache
@@ -76,7 +76,7 @@ async def fetch_email(email_type: EmailType):
     """Fetch email data for a specific email type, merging fresh scraped data with cached user edits"""
     
     # Load cached data
-    cached_data = email_cache.load(email_type.value)
+    cached_data = email_cache.load(email_type.value) or {}
     
     if email_type == EmailType.BE:
 
@@ -97,7 +97,7 @@ async def fetch_email(email_type: EmailType):
         results = dict(zip(tasks.keys(), results))
 
         fresh_data = {
-            "top_image": TopImage(url="", image_url=""),
+            "top_image": TopImage(),
             "tides": results['weather'].tides,
             "weather": results['weather'].weather,
             "date": datetime.now().strftime("%-d %B %Y"),
@@ -111,13 +111,15 @@ async def fetch_email(email_type: EmailType):
             "podcast_stories": results.get('podcast_stories', []),
             "family_notices": results.get('family_notices', [])
         }
-        
-        # Merge with cached user edits
-        merged_data = merge_with_cache(email_type.value, fresh_data, cached_data)
-        email_data = BEEmailData(**merged_data)
-        return email_data
+
+        for k in fresh_data.keys():
+            if not fresh_data[k] and cached_data.get(k):
+                fresh_data[k] = cached_data[k]
+
+        return BEEmailData(**fresh_data)
     
     elif email_type == EmailType.GE:
+
         scraper = GEScraper()
         weather_scraper = WeatherScraper.Gsy()
         tasks = {
@@ -132,7 +134,7 @@ async def fetch_email(email_type: EmailType):
         results = dict(zip(tasks.keys(), results))
         
         fresh_data = {
-            "top_image": TopImage(url="", image_url=""),
+            "top_image": TopImage(),
             "tides": results['weather'].tides,
             "weather": results['weather'].weather,
             "date": datetime.now().strftime("%-d %B %Y"),
@@ -145,11 +147,10 @@ async def fetch_email(email_type: EmailType):
             "community_stories": results.get('community_stories', []),
             "podcast_stories": results.get('podcast_stories', [])
         }
-        
-        # Merge with cached user edits
-        merged_data = merge_with_cache(email_type.value, fresh_data, cached_data)
-        email_data = GEEmailData(**merged_data)
-        return email_data
+        for k in fresh_data.keys():
+            if not fresh_data[k] and cached_data.get(k):
+                fresh_data[k] = cached_data[k]
+        return GEEmailData(**fresh_data)
     
     elif email_type == EmailType.JEP:
 
@@ -157,16 +158,20 @@ async def fetch_email(email_type: EmailType):
         news_stories = await scraper.fetch_n_stories_for_section("news")
         
         fresh_data = {
-            "cover_image_url": "",
             "date": datetime.now().strftime("%-d %B %Y"),
+            "jep_cover_url": "",    
             "news_stories": news_stories,
-            "adverts": []
+            "publication_cover_url": "",
+            "max_banner": Advert(url="", image_url=""),
+            "leaderboard_adverts": [],
+            "mpu_adverts": []
         }
-        
-        # Merge with cached user edits
-        merged_data = merge_with_cache(email_type.value, fresh_data, cached_data)
-        email_data = JEPEmailData(**merged_data)
-        return email_data 
+    
+        for k in fresh_data.keys():
+            if not fresh_data[k] and cached_data.get(k):
+                fresh_data[k] = cached_data[k]
+        email_data = JEPEmailData(**fresh_data)
+        return email_data
 
     elif email_type == EmailType.AIMPremium:
 
@@ -178,11 +183,10 @@ async def fetch_email(email_type: EmailType):
             "news_stories": news_stories,
             "foreword": Foreword.default(),
         }
-        
-        # Merge with cached user edits
-        merged_data = merge_with_cache(email_type.value, fresh_data, cached_data)
-        email_data = AIMPremiumEmailData(**merged_data)
-        return email_data
+        for k in fresh_data.keys():
+            if not fresh_data[k] and cached_data.get(k):
+                fresh_data[k] = cached_data[k]
+        return AIMPremiumEmailData(**fresh_data)
     
     else:
         raise HTTPException(status_code=400, detail=f"Unknown email type: {email_type}")

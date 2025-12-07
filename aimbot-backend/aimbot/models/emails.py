@@ -64,11 +64,13 @@ class AIMPremiumEmailData(BaseModel):
     foreword: Foreword
 
 class JEPEmailData(BaseModel):
-    jep_cover_url: str
-    publication_cover_url: str
     date: str
+    jep_cover_url: str
     news_stories: list[NewsStory]
-    adverts: list[Advert]
+    publication_cover_url: str
+    max_banner: Optional[Advert] = None
+    leaderboard_adverts: list[Advert] = []
+    mpu_adverts: list[Advert] = []
 
     def __repr__(self):
         return f"JEPEmailData(date={self.date}, {len(self.news_stories)} news stories)"

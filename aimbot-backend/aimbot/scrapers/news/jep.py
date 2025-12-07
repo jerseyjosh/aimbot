@@ -83,21 +83,3 @@ class JEPScraper(BaseScraper):
             if link:
                 news_urls.append(link)
         return news_urls
-    
-if __name__ == "__main__":
-    
-    import asyncio
-    async def test():
-        scraper = JEPScraper()
-        urls = await scraper.get_story_urls(section = "news")
-        responses = await scraper.fetch_all(urls)
-        for response in responses:
-            story = scraper.parse(response)
-            print(f"Headline: {story.headline}")
-            print(f"Author: {story.author}")
-            print(f"URL: {story.url}")
-            print(f"Text: {story.text[:100]}...")  # Print first 100 characters
-            print(f"Image URL: {story.image_url}")
-            print("-" * 40)
-    
-    asyncio.run(test())

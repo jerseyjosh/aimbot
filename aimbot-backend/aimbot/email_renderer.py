@@ -26,9 +26,12 @@ class EmailRenderer:
         if not text:
             return ""
         
-        # Look for period followed by whitespace (including zero-width chars) and capital letter, 
-        # or period at end of string. But not period between digits (decimal numbers)
-        sentence_end_pattern = r'\.(?=[\s\u200b]+[A-Z]|$)(?!\d)'
+        # Look for period followed by:
+        # - whitespace (including zero-width chars) and capital letter
+        # - directly by capital letter (no space)
+        # - end of string
+        # But not period between digits (decimal numbers)
+        sentence_end_pattern = r'\.(?=[\s\u200b]*[A-Z]|$)(?!\d)'
         
         match = re.search(sentence_end_pattern, text)
         if match:

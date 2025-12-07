@@ -26,7 +26,7 @@ class FamilyNotice(BaseModel):
     additional_text: str = ""
 
 class TopImage(BaseModel):
-    url: str
-    image_url: str
-    author: Optional[str] = None
-    text: Optional[str] = None
+    url: str = ""
+    author: str = ""
+    text: str = ""
+    link: Optional[str] = None
