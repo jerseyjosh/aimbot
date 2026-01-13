@@ -13,6 +13,7 @@ class BEEmailData(BaseModel):
     news_stories: list[NewsStory]
     horizontal_adverts: list[Advert]
     vertical_adverts: list[Advert]
+    opinion_stories: list[NewsStory]
     sports_stories: list[NewsStory]
     business_stories: list[NewsStory]
     connect_image_url: str
@@ -21,7 +22,7 @@ class BEEmailData(BaseModel):
     family_notices: list[FamilyNotice]
     
     def __repr__(self):
-        return f"BEEmailData(date={self.date}, {len(self.news_stories)} news stories, {len(self.family_notices)} family notices)"
+        return f"BEEmailData(date={self.date}, {len(self.news_stories)}"
 
 class GEEmailData(BaseModel):
     top_image: TopImage
@@ -31,6 +32,7 @@ class GEEmailData(BaseModel):
     news_stories: list[NewsStory]
     horizontal_adverts: list[Advert]
     vertical_adverts: list[Advert]
+    opinion_stories: list[NewsStory]
     sports_stories: list[NewsStory]
     business_stories: list[NewsStory]
     connect_image_url: str
