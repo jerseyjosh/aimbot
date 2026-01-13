@@ -2427,7 +2427,7 @@
                 &nbsp;
               </div>
 
-              <!-- HORIZONTAL ADVERT 3 -->
+              <!-- HORIZONTAL ADVERT -->
               {% if horizontal_adverts|length > 0 %}
               {% set advert = horizontal_adverts.pop(0) %}
               <div
@@ -2510,6 +2510,172 @@
                 &nbsp;
               </div>
 
+              {% if opinion_stories|length > 0 %}
+              <!-- OPINION -->
+              <div class="layout one-col fixed-width stack"
+                style="Margin: 0 auto;max-width: 600px;min-width: 320px; width: 320px;width: calc(28000% - 167400px);overflow-wrap: break-word;word-wrap: break-word;word-break: break-word;">
+                <div class="layout__inner"
+                  style="border-collapse: collapse;display: table;width: 100%;background-color: #ffffff;">
+                  <!--[if mso]><table align="center" cellpadding="0" cellspacing="0" role="presentation"><tr class="layout-fixed-width" style="background-color: #ffffff;"><td style="width: 600px" class="w560"><![endif]-->
+                  <div class="column"
+                    style="text-align: left;color: #808285;font-size: 14px;line-height: 21px;font-family: Open Sans,sans-serif;">
+
+                    <div style="font-size: 12px;font-style: normal;font-weight: normal;line-height: 19px;" align="center">
+                      <img class="gnd-corner-image gnd-corner-image-center gnd-corner-image-top gnd-corner-image-bottom"
+                        style="border: 0;display: block;height: auto;width: 100%;max-width: 900px;" alt="" width="600"
+                        src="https://i4.createsend1.com/ei/d/ED/FBD/519/233624/csfinal/Opinion-Header5-9900000000079e3c.jpg">
+                    </div>
+
+                  </div>
+                  <!--[if mso]></td></tr></table><![endif]-->
+                </div>
+              </div>
+              
+              {% for story in opinion_stories %}
+              <div class="layout fixed-width stack"
+                style="Margin: 0 auto;max-width: 600px;min-width: 320px; width: 320px;width: calc(28000% - 167400px);overflow-wrap: break-word;word-wrap: break-word;word-break: break-word;">
+                <div class="layout__inner"
+                  style="border-collapse: collapse;display: table;width: 100%;background-color: #ffffff;">
+                  <!--[if mso]><table align="center" cellpadding="0" cellspacing="0" role="presentation"><tr class="layout-fixed-width" style="background-color: #ffffff;"><td style="width: 200px" valign="top" class="w160"><![endif]-->
+                  <div class="column narrow"
+                    style="text-align: left;color: #808285;font-size: 14px;line-height: 21px;font-family: Open Sans,sans-serif;Float: left;max-width: 320px;min-width: 200px; width: 320px;width: calc(72200px - 12000%);">
+
+                    <div style="Margin-left: 20px;Margin-right: 20px;Margin-top: 24px;Margin-bottom: 24px;">
+                      <div style="font-size: 12px;font-style: normal;font-weight: normal;line-height: 19px;"
+                        align="center">
+                        <img style="border: 0;display: block;height: auto;width: 100%;max-width: 211px;" alt=""
+                          width="160"
+                          src="{{ story.image_url if story.image_url else 'https://i5.createsend1.com/ei/d/ED/FBD/519/233624/csfinal/reader-letter-opinion1-990000079e01453c.jpg' }}">
+                      </div>
+                    </div>
+
+                  </div>
+                  <!--[if mso]></td><td style="width: 400px" valign="top" class="w360"><![endif]-->
+                  <div class="column wide"
+                    style="text-align: left;color: #808285;font-size: 14px;line-height: 21px;font-family: Open Sans,sans-serif;Float: left;max-width: 400px;min-width: 320px; width: 320px;width: calc(8000% - 47600px);">
+
+                    <div style="Margin-left: 20px;Margin-right: 20px;Margin-top: 24px;Margin-bottom: 24px;">
+                      <div style="mso-line-height-rule: exactly;mso-text-raise: 11px;vertical-align: middle;">
+                        <h1
+                          style="Margin-top: 0;Margin-bottom: 0;font-style: normal;font-weight: normal;color: #27313c;font-size: 17px;line-height: 26px;font-family: PT Sans,Trebuchet MS,sans-serif;">
+                          <a style="text-decoration: none;transition: opacity 0.1s ease-in;color: #27313c;"
+                            href="{{ story.url }}">{{ story.headline }}</a></h1>
+                        <p style="Margin-top: 20px;Margin-bottom: 0;"><a class="no-underline"
+                            style="text-decoration: none;transition: opacity 0.1s ease-in;color: #27313c;"
+                            href="{{ story.url }}"><span
+                              style="text-decoration: inherit;color: #808285;">{{ story.text | first_sentence }}</span></a></p>
+                      </div>
+                    </div>
+
+                  </div>
+                  <!--[if mso]></td></tr></table><![endif]-->
+                </div>
+              </div>
+              {% endfor %}
+
+              <div class="layout one-col fixed-width stack"
+                style="Margin: 0 auto;max-width: 600px;min-width: 320px; width: 320px;width: calc(28000% - 167400px);overflow-wrap: break-word;word-wrap: break-word;word-break: break-word;">
+                <div class="layout__inner"
+                  style="border-collapse: collapse;display: table;width: 100%;background-color: #ffffff;">
+                  <!--[if mso]><table align="center" cellpadding="0" cellspacing="0" role="presentation"><tr class="layout-fixed-width" style="background-color: #ffffff;"><td style="width: 600px" class="w560"><![endif]-->
+                  <div class="column"
+                    style="text-align: left;color: #808285;font-size: 14px;line-height: 21px;font-family: Open Sans,sans-serif;">
+
+                    <div style="font-size: 12px;font-style: normal;font-weight: normal;line-height: 19px;" align="center">
+                      <img class="gnd-corner-image gnd-corner-image-center gnd-corner-image-top gnd-corner-image-bottom"
+                        style="border: 0;display: block;height: auto;width: 100%;max-width: 729px;" alt="" width="600"
+                        src="https://i6.createsend1.com/ei/d/ED/FBD/519/233624/csfinal/Bottomcopy4-9900000000079e3c.jpg">
+                    </div>
+
+                  </div>
+                  <!--[if mso]></td></tr></table><![endif]-->
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- SEPARATOR -->
+              <div
+                style="
+                  mso-line-height-rule: exactly;
+                  line-height: 20px;
+                  font-size: 20px;
+                "
+              >
+                &nbsp;
+              </div>
+
+              <!-- HORIZONTAL ADVERT -->
+              {% if horizontal_adverts|length > 0 %}
+              {% set advert = horizontal_adverts.pop(0) %}
+              <div
+                class="layout one-col fixed-width stack"
+                style="
+                  margin: 0 auto;
+                  max-width: 600px;
+                  min-width: 320px;
+                  width: 320px;
+                  width: calc(28000% - 167400px);
+                  overflow-wrap: break-word;
+                  word-wrap: break-word;
+                  word-break: break-word;
+                "
+              >
+                <div
+                  class="layout__inner"
+                  style="
+                    border-collapse: collapse;
+                    display: table;
+                    width: 100%;
+                    background-color: #ffffff;
+                  "
+                >
+                  <!--[if mso]><table align="center" cellpadding="0" cellspacing="0" role="presentation"><tr class="layout-fixed-width" style="background-color: #ffffff;"><td style="width: 600px" class="w560"><![endif]-->
+                  <div
+                    class="column"
+                    style="
+                      text-align: left;
+                      color: #808285;
+                      font-size: 14px;
+                      line-height: 21px;
+                      font-family: Open Sans, sans-serif;
+                    "
+                  >
+                    <div
+                      style="
+                        font-size: 12px;
+                        font-style: normal;
+                        font-weight: normal;
+                        line-height: 19px;
+                      "
+                      align="center"
+                    >
+                      <a
+                        style="
+                          text-decoration: underline;
+                          transition: opacity 0.1s ease-in;
+                          color: #27313c;
+                        "
+                        href="{{ advert.url }}"
+                        ><img
+                          class="gnd-corner-image gnd-corner-image-center gnd-corner-image-top gnd-corner-image-bottom"
+                          style="
+                            border: 0;
+                            display: block;
+                            height: auto;
+                            width: 100%;
+                            max-width: 728px;
+                          "
+                          alt=""
+                          width="600"
+                          src="{{ advert.image_url }}"
+                      /></a>
+                    </div>
+                  </div>
+                  <!--[if mso]></td></tr></table><![endif]-->
+                </div>
+              </div>
+              {% endif %}
+
               {% if sports_stories|length > 0 %}
               <!-- SPORTS HEADER -->
               <div
@@ -2571,6 +2737,17 @@
                   </div>
                   <!--[if mso]></td></tr></table><![endif]-->
                 </div>
+              </div>
+
+              <!-- SEPARATOR -->
+              <div
+                style="
+                  mso-line-height-rule: exactly;
+                  line-height: 20px;
+                  font-size: 20px;
+                "
+              >
+                &nbsp;
               </div>
 
               <!-- SPORTS STORIES -->
@@ -2832,7 +3009,7 @@
                 &nbsp;
               </div>
 
-              <!-- HORIZONTAL ADVERT 4 -->
+              <!-- HORIZONTAL ADVERT -->
               {% if horizontal_adverts|length > 0 %}
               {% set advert = horizontal_adverts.pop(0) %}
               <div
@@ -3238,6 +3415,7 @@
                 &nbsp;
               </div>
 
+              <!-- HORIZONTAL ADVERT -->
               {% if horizontal_adverts|length > 0 %}
               {% set advert = horizontal_adverts.pop(0) %}
               <div
@@ -3766,6 +3944,7 @@
                   <!--[if mso]></td></tr></table><![endif]-->
                 </div>
               </div>
+
               <!-- SEPARATOR -->
               <div
                 style="
@@ -3777,6 +3956,7 @@
                 &nbsp;
               </div>
 
+              <!-- HORIZONTAL ADVERT -->
               {% if horizontal_adverts|length > 0 %}
               {% set advert = horizontal_adverts.pop(0) %}
               <div
@@ -4187,6 +4367,7 @@
                 &nbsp;
               </div>
 
+              <!-- HORIZONTAL ADVERT -->
               {% if horizontal_adverts|length > 0 %}
               {% set advert = horizontal_adverts.pop(0) %}
               <div
@@ -4741,7 +4922,7 @@
                 &nbsp;
               </div>
 
-                            <!-- HORIZONTAL ADVERT -->
+                <!-- HORIZONTAL ADVERT -->
               {% if horizontal_adverts|length > 0 %}
               {% set advert = horizontal_adverts.pop(0) %}
               <div
