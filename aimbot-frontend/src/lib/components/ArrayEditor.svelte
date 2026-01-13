@@ -4,10 +4,13 @@
     export let items: any[];
     export let itemTemplate: any = null; // Optional template for empty arrays
 
-    // Extract column names from the first item's keys, or from template
-    $: columns = items.length > 0 
-        ? Object.keys(items[0]) 
-        : (itemTemplate ? Object.keys(itemTemplate) : []);
+    // Persist column names so the add button stays usable after rows are cleared
+    let columns: string[] = [];
+    $: if (items.length > 0) {
+        columns = Object.keys(items[0]);
+    } else if (itemTemplate) {
+        columns = Object.keys(itemTemplate);
+    }
 
     // Drag and drop state
     let draggedIndex: number | null = null;
@@ -83,7 +86,7 @@
     function addNewRow() {
         // Create a new empty item with the same structure as existing items or template
         const newItem: any = {};
-        const template = itemTemplate || (items.length > 0 ? items[0] : {});
+        const template = itemTemplate || (items.length > 0 ? items[0] : columns.reduce((acc, col) => ({ ...acc, [col]: '' }), {}));
         
         Object.keys(template).forEach(column => {
             newItem[column] = ''; // Initialize all fields as empty strings
