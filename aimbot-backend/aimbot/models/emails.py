@@ -11,6 +11,7 @@ class BEEmailData(BaseModel):
     weather: str
     date: str
     news_stories: list[NewsStory]
+    spon_con_stories: list[NewsStory]
     horizontal_adverts: list[Advert]
     vertical_adverts: list[Advert]
     opinion_stories: list[NewsStory]
@@ -22,7 +23,7 @@ class BEEmailData(BaseModel):
     family_notices: list[FamilyNotice]
     
     def __repr__(self):
-        return f"BEEmailData(date={self.date}, {len(self.news_stories)}"
+        return f"BEEmailData(date={self.date}, {len(self.news_stories)} news stories)"
 
 class GEEmailData(BaseModel):
     top_image: TopImage
@@ -30,6 +31,7 @@ class GEEmailData(BaseModel):
     weather: str
     date: str
     news_stories: list[NewsStory]
+    spon_con_stories: list[NewsStory]
     horizontal_adverts: list[Advert]
     vertical_adverts: list[Advert]
     opinion_stories: list[NewsStory]
