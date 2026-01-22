@@ -10,6 +10,8 @@
         columns = Object.keys(items[0]);
     } else if (itemTemplate) {
         columns = Object.keys(itemTemplate);
+    } else {
+        columns = [];
     }
 
     // Drag and drop state

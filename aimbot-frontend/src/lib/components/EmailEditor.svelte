@@ -24,8 +24,7 @@
     // Get all fields that contain NewsStory arrays
     $: newsStoryFields = emailData ? Object.keys(emailData).filter(
         key => Array.isArray(emailData[key]) && 
-               emailData[key].length > 0 && 
-               'headline' in emailData[key][0]
+               key.endsWith('_stories')
     ) : [];
 
     // Set initial active field when data loads
@@ -68,13 +67,20 @@
             });
             
             if (!response.ok) {
-                throw new Error(`Failed to render email: ${response.statusText}`);
+                let errorDetail = response.statusText;
+                try {
+                    const errorData = await response.json();
+                    errorDetail = errorData.detail || errorDetail;
+                } catch {
+                    // If response isn't JSON, use statusText
+                }
+                throw new Error(`Failed to render email: ${errorDetail}`);
             }
             
             renderedEmail = await response.text();
         } catch (error) {
             console.error("Error rendering email:", error);
-            alert("Failed to render email");
+            alert(error instanceof Error ? error.message : "Failed to render email");
         } finally {
             renderingData = false;
         }
@@ -96,11 +102,18 @@
             });
             
             if (!response.ok) {
-                throw new Error(`Failed to save email: ${response.statusText}`);
+                let errorDetail = response.statusText;
+                try {
+                    const errorData = await response.json();
+                    errorDetail = errorData.detail || errorDetail;
+                } catch {
+                    // If response isn't JSON, use statusText
+                }
+                throw new Error(`Failed to save email: ${errorDetail}`);
             }
         } catch (error) {
             console.error("Error saving email:", error);
-            alert("Failed to save email data");
+            alert(error instanceof Error ? error.message : "Failed to save email data");
         } finally {
             savingData = false;
         }
