@@ -9,7 +9,7 @@ load_dotenv(find_dotenv())
 class ElevenLabs:
 
     MODEL = "eleven_multilingual_v2"
-    SETTINGS = VoiceSettings(stability=0.75, similarity_boost=0.75, use_speaker_boost=False)
+    SETTINGS = VoiceSettings(stability=1.0, similarity_boost=1.0, use_speaker_boost=False)
 
     def __init__(self, api_key: str = os.getenv("ELEVENLABS_API_KEY")):
         self.client = APIClient(api_key=api_key)
