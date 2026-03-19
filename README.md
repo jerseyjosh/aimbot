@@ -1,6 +1,9 @@
 # Svelte / FastAPI All Island Media Automation Site
 
 # Changelog
+- 2026-03-09 [1h]
+    - Added takover top image option to frontend and backend
+
 - 2026-01-22 [2h]
     - Fixed issue with greyed out "add new stories" button in certain circumstances
     - Added more informative error info to debug email rendering issues
