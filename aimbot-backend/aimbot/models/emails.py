@@ -40,7 +40,7 @@ class GEEmailData(BaseModel):
     connect_image_url: str
     community_stories: list[NewsStory]
     podcast_stories: list[NewsStory]
-    
+
     def __repr__(self):
         return f"GEEmailData(date={self.date}, {len(self.news_stories)} news stories)"
     

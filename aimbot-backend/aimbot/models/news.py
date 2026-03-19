@@ -30,3 +30,4 @@ class TopImage(BaseModel):
     author: str = ""
     text: str = ""
     link: Optional[str] = None
+    takeover: bool = False # whether this top image is a takeover
