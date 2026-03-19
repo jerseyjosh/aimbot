@@ -227,6 +227,16 @@
                         bind:value={emailData[activeField]}>
                     </textarea>
 
+                {:else if typeof emailData[activeField] === 'boolean'}
+                    <div class="form-check mt-2">
+                        <input
+                            id="fieldCheckbox"
+                            type="checkbox"
+                            class="form-check-input checkbox-lg"
+                            bind:checked={emailData[activeField]} />
+                        <label class="form-check-label" for="fieldCheckbox">Enabled</label>
+                    </div>
+
                 {:else if Array.isArray(emailData[activeField])}
                     <!-- Data editor for list of objects -->
                     <ArrayEditor 
@@ -245,6 +255,14 @@
                                     rows="4"
                                     bind:value={emailData[activeField][key]}>
                                 </textarea>
+                            {:else if typeof value === 'boolean'}
+                                <div class="form-check">
+                                    <input
+                                        id="field-{key}"
+                                        type="checkbox"
+                                        class="form-check-input checkbox-lg"
+                                        bind:checked={emailData[activeField][key]} />
+                                </div>
                             {:else}
                                 <input 
                                     id="field-{key}"
@@ -365,5 +383,9 @@
 
     .modal.show {
         z-index: 1050;
+    }
+
+    .checkbox-lg {
+        transform: scale(1.25);
     }
 </style>
