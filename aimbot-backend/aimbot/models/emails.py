@@ -44,6 +44,14 @@ class GEEmailData(BaseModel):
     def __repr__(self):
         return f"GEEmailData(date={self.date}, {len(self.news_stories)} news stories)"
     
+class ConnectInsiderEmailData(BaseModel):
+    top_image: TopImage
+    big_stories: list[NewsStory]
+    sponsored_stories: list[NewsStory]
+    movers_and_shakers: list[NewsStory]
+    connect_image_url: str
+    ads: list[Advert]
+    
 class Foreword(BaseModel):
     title: str
     author: str

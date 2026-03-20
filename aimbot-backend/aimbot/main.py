@@ -18,7 +18,8 @@ from aimbot.scrapers.weather import WeatherScraper
 from aimbot.scrapers.family_notices import FamilyNoticesScraper
 
 from aimbot.models.emails import (
-    BEEmailData, GEEmailData, JEPEmailData, AIMPremiumEmailData, Foreword
+    BEEmailData, ConnectInsiderEmailData, GEEmailData, 
+    JEPEmailData, AIMPremiumEmailData, Foreword
 )
 from aimbot.models.radio import RadioNewsData
 from aimbot.models.news import Advert, NewsStory, TopImage
@@ -26,7 +27,7 @@ from aimbot.email_renderer import EmailRenderer
 from aimbot.radio.elabs import ElevenLabs
 from aimbot.cache import EmailCache, merge_with_cache
 
-EmailData = Union[BEEmailData, GEEmailData, JEPEmailData, AIMPremiumEmailData]
+EmailData = Union[BEEmailData, ConnectInsiderEmailData, GEEmailData, JEPEmailData, AIMPremiumEmailData]
 
 app = FastAPI()
 
@@ -53,6 +54,8 @@ class EmailType(str, Enum):
     GE = "ge"
     JEP = "jep"
     AIMPremium = "aimpremium"
+    INSIDER_JSY = "insider_jsy"
+    INSIDER_GSY = "insider_gsy"
 
 @api_router.post("/news_stories/", response_model=NewsStory)
 async def get_news_story(url: str):
@@ -194,6 +197,22 @@ async def fetch_email(email_type: EmailType):
                 fresh_data[k] = cached_data[k]
         return AIMPremiumEmailData(**fresh_data)
     
+    elif email_type in [EmailType.INSIDER_JSY, EmailType.INSIDER_GSY]:
+        scraper = BEScraper() if email_type == EmailType.INSIDER_JSY else GEScraper()
+        business_stories = await scraper.fetch_n_stories_for_section("business", limit=10)
+        fresh_data = {
+            "top_image": TopImage(),
+            "big_stories": business_stories,
+            "sponsored_stories": [business_stories[0]],
+            "movers_and_shakers": business_stories,
+            "connect_image_url": "",
+            "ads": []
+        }
+        for k in fresh_data.keys():
+            if not fresh_data[k] and cached_data.get(k):
+                fresh_data[k] = cached_data[k]
+        return ConnectInsiderEmailData(**fresh_data)
+
     else:
         raise HTTPException(status_code=400, detail=f"Unknown email type: {email_type}")
 
@@ -206,7 +225,9 @@ async def render_email(email_type: EmailType, email_data: EmailData):
         EmailType.BE: "be_template.html",
         EmailType.GE: "ge_template.html",
         EmailType.JEP: "jep_template.html",
-        EmailType.AIMPremium: "aim_premium_template.html"
+        EmailType.AIMPremium: "aim_premium_template.html",
+        EmailType.INSIDER_JSY: "connect_insider.html",
+        EmailType.INSIDER_GSY: "connect_insider_gsy.html"
     }
     
     template_name = template_map.get(email_type)

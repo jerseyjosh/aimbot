@@ -37,6 +37,8 @@
 						<li><a class="dropdown-item" href="/ge_email">GE Email</a></li>
 						<li><a class="dropdown-item" href="/jep_email">JEP Email</a></li>
 						<li><a class="dropdown-item" href="/aim_premium">AIM Premium Email</a></li>
+						<li><a class="dropdown-item" href="/insider_jsy">Connect Insider Jersey</a></li>
+						<li><a class="dropdown-item" href="/insider_gsy">Connect Insider Guernsey</a></li>
 					</ul>
 				</li>
 				<li class="nav-item">
