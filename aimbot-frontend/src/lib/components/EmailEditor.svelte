@@ -38,7 +38,21 @@
         try {
             const response = await fetch(`/api/emails/${emailType}`);
             if (!response.ok) {
-                throw new Error(`Failed to fetch email data: ${response.statusText}`);
+                let errorDetail = `${response.status} ${response.statusText}`;
+                try {
+                    const errorData = await response.json();
+                    errorDetail = errorData.detail || JSON.stringify(errorData);
+                } catch {
+                    try {
+                        const errorText = await response.text();
+                        if (errorText) {
+                            errorDetail = errorText;
+                        }
+                    } catch {
+                        // If response body can't be read, keep default status message
+                    }
+                }
+                throw new Error(`Failed to fetch email data: ${errorDetail}`);
             }
             emailData = await response.json();
             if (emailData) {
@@ -46,7 +60,7 @@
             }
         } catch (error) {
             console.error("Error fetching email data:", error);
-            alert("Failed to fetch email data");
+            alert(error instanceof Error ? error.message : "Failed to fetch email data");
         } finally {
             fetchingData = false;
         }

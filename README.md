@@ -1,9 +1,13 @@
 # Svelte / FastAPI All Island Media Automation Site
 
 # Changelog
-- 2026-03-09 [1h]
+- 2026-03-20 [3h]
+    - Added endpoints for Jersey and Guernsey Connect Insider emails, created insider jinja templates, added new endpoints to backend.
+
+- 2026-03-19 [1h]
     - Added takover top image option to frontend and backend
 
+[PAID]
 - 2026-01-22 [2h]
     - Fixed issue with greyed out "add new stories" button in certain circumstances
     - Added more informative error info to debug email rendering issues
