@@ -1,14 +1,15 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-import logging
 from dateutil.parser import parse as date_parse
 from typing import Optional
 
 from bs4 import BeautifulSoup
+from loguru import logger
 
 from aimbot.scrapers.news.base import BaseScraper, ScraperResponse
 from aimbot.models.news import NewsStory
 
-logger = logging.getLogger(__name__)
 
 class GEScraper(BaseScraper):
     """Scraper for Bailiwick Express Guernsey"""
@@ -19,7 +20,9 @@ class GEScraper(BaseScraper):
         "sport": "https://www.bailiwickexpress.com/gsy-sport/",
         "opinion": "https://www.bailiwickexpress.com/opinion-guernsey/",
         "community": "https://www.bailiwickexpress.com/gsy-community/",
-        "podcasts": "https://www.bailiwickexpress.com/jsy-radio-podcasts/"
+        # Note: there is no dedicated Guernsey podcasts page; the Jersey one
+        # covers both islands' audio content.
+        "podcasts": "https://www.bailiwickexpress.com/jsy-radio-podcasts/",
     }
 
     def __init__(self):
@@ -36,11 +39,12 @@ class GEScraper(BaseScraper):
         entry_content = soup.find('div', class_='entry-content')
         p_tags = entry_content.find_all('p')
         text = '\n'.join([p.text.strip() for p in p_tags])
-        # get date
+        # get date — store as datetime (not date) to match model type
         date = soup.find('time').text
         try:
-            date = date_parse(date).date()
+            date = date_parse(date)
         except Exception as e:
+            logger.debug(f"Failed to parse date '{date}': {e}")
             date = None
         # get author
         author = soup.find('a', class_=['url', 'fn', 'a'])
@@ -51,10 +55,10 @@ class GEScraper(BaseScraper):
         # get image url
         try:
             image_url = soup.find('figure', class_='post-thumbnail').find('img').get('src')
-            image_url = image_url.split('?')[0] # remove query string
+            image_url = image_url.split('?')[0]  # remove query string
         except Exception as e:
             logger.debug(f"Failed to get image url for {response.url}")
-            image_url = None
+            image_url = ""
 
         return NewsStory(
             headline=headline,
@@ -62,7 +66,7 @@ class GEScraper(BaseScraper):
             author=author,
             url=response.url,
             image_url=image_url,
-            date = date
+            date=date,
         )
 
     async def get_story_urls(self, section: str, limit: Optional[int] = None) -> list[str]:
@@ -85,7 +89,10 @@ class GEScraper(BaseScraper):
                 break
         return urls
     
+
 if __name__ == "__main__":
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
     
     import asyncio
     async def test():
@@ -99,15 +106,4 @@ if __name__ == "__main__":
             print(f"Image URL: {story.image_url}")
             print("-" * 40)
 
-        # urls = await scraper.get_story_urls(section = "sporting", limit=3)
-        # responses = await scraper.fetch_all(urls)
-        # for response in responses:
-        #     story = scraper.parse(response)
-        #     print(f"Headline: {story.headline}")
-        #     print(f"Author: {story.author}")
-        #     print(f"URL: {story.url}")
-        #     print(f"Text: {story.text[:100]}...")  # Print first 100 characters
-        #     print(f"Image URL: {story.image_url}")
-        #     print("-" * 40)
-    
     asyncio.run(test())

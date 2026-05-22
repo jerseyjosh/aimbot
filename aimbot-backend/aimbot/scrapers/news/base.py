@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Optional
@@ -5,21 +7,21 @@ import aiohttp
 import random
 import time
 import asyncio
-import logging
 
 from bs4 import BeautifulSoup
 from aiolimiter import AsyncLimiter
+from loguru import logger
 
 from aimbot.scrapers.config import HEADERS
-from aimbot.models.news import NewsStory, FamilyNotice
+from aimbot.models.news import NewsStory
 
-logger = logging.getLogger(__name__)
 
 @dataclass
 class ScraperResponse:
     """Dataclass to hold scraper response data"""
     url: str
     soup: BeautifulSoup
+
 
 class BaseScraper(ABC):
     """Base class for all news scrapers"""
@@ -31,7 +33,7 @@ class BaseScraper(ABC):
     #   "sports": "https://example.com/sports"
     # }
     sections: dict[str, str]
-    limiter = AsyncLimiter(max_rate=5, time_period=2) # 5 requests every 2 seconds
+    limiter = AsyncLimiter(max_rate=5, time_period=2)  # 5 requests every 2 seconds
     
     def __init__(self):
         raise NotImplementedError("BaseScraper is an abstract class and cannot be instantiated directly")
@@ -80,7 +82,7 @@ class BaseScraper(ABC):
                 story = self.parse(response)
                 stories.append(story)
             except Exception as e:
-                logger.error(f"Failed to parse story from {response.url}: {e}", exc_info=True)
+                logger.error(f"Failed to parse story from {response.url}: {e}")
         logger.debug(f"Successfully parsed {len(stories)} stories out of {len(responses)} responses")
         return stories
 
@@ -91,4 +93,3 @@ class BaseScraper(ABC):
         results = await asyncio.gather(*tasks)
         # return dict
         return {section: stories for section, stories in zip(self.sections.keys(), results)}
-

@@ -1,14 +1,15 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-import logging
 from dateutil.parser import parse as date_parse
 from typing import Optional
 
 from bs4 import BeautifulSoup
+from loguru import logger
 
 from aimbot.scrapers.news.base import BaseScraper, ScraperResponse
 from aimbot.models.news import NewsStory
 
-logger = logging.getLogger(__name__)
 
 class JEPScraper(BaseScraper):
     """Scraper for Jersey Evening Post"""
@@ -41,13 +42,18 @@ class JEPScraper(BaseScraper):
             words[0] = words[0].capitalize()
         text = ' '.join(words)
         # get date
-        date = soup.find('time').text
+        raw_date = soup.find('time').text
         try:
-            date = date_parse(date)
-        except:
+            date = date_parse(raw_date)
+        except Exception as e:
+            logger.debug(f"Failed to parse date '{raw_date}': {e}")
             date = None
         # get author
-        author = soup.find('span', class_='byline').text or "Jersey Evening Post"
+        author = soup.find('span', class_='byline')
+        if author is not None:
+            author = author.text or "Jersey Evening Post"
+        else:
+            author = "Jersey Evening Post"
         author = author.replace('\n', ' ').strip()
         if author.lower().startswith("by "):
             author = author[3:]
@@ -55,15 +61,15 @@ class JEPScraper(BaseScraper):
         try:
             image_url = soup.find('figure', class_='post-thumbnail').find('img').get('src')
         except Exception as e:
-            logger.debug(f"Failed to get image url for {soup.url}")
-            image_url = None
+            logger.debug(f"Failed to get image url for {response.url}")
+            image_url = ""
         return NewsStory(
             headline=headline,
             text=text,
             date=date,
             author=author,
             url=response.url,
-            image_url=image_url
+            image_url=image_url,
         )
 
     async def get_story_urls(self, section: str, limit: Optional[int] = None) -> list[str]:
