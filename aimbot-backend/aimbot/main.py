@@ -46,13 +46,36 @@ logger.add(
     format="{time:HH:mm:ss} | {level:<7} | {name}:{function}:{line} | {message}",
 )
 
-# ---------------------------------------------------------------------------
-# App setup
-# ---------------------------------------------------------------------------
 EmailData = Union[BEEmailData, ConnectInsiderEmailData, GEEmailData, JEPEmailData, AIMPremiumEmailData]
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
+
+
+# ---------------------------------------------------------------------------
+# Global exception handler — ensures every error returns structured JSON
+# so the frontend can display a meaningful message instead of a raw HTML 500.
+# ---------------------------------------------------------------------------
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch all unhandled exceptions and return a structured JSON error.
+
+    Without this handler FastAPI falls back to a raw HTML 500 page which the
+    frontend cannot parse — the user would see nothing useful.  HTTPException
+    instances are re-raised so that FastAPI's built-in handler can set the
+    correct status code; everything else becomes a 500.
+    """
+    if isinstance(exc, HTTPException):
+        raise exc
+    logger.exception(f"Unhandled exception on {request.method} {request.url.path}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {exc}"},
+    )
 
 app.add_middleware(
     CORSMiddleware,

@@ -73,25 +73,35 @@ class FamilyNoticesScraper:
         Formats a name from 'Last, First (Extra1) (Extra2)' to 'First Last (Extra1) (Extra2)'.
         Handles multiple parenthetical parts.
         """
-        # Extract all bracketed parts
+        if not name.strip():
+            return ""
+
+        # Extract all bracketed parts (preserve their original casing)
         bracketed_parts = re.findall(r"\(.*?\)", name)
-        
+
         # Remove bracketed parts from the main name
         name_without_brackets = re.sub(r"\(.*?\)", "", name).strip()
-        
+
         # Handle "Last, First" format
         if "," in name_without_brackets:
             last, first = [part.strip() for part in name_without_brackets.split(",", 1)]
+            # Capitalize properly — use str.capitalize() per word instead of .title()
+            # since .title() mangles acronyms ("MBE" → "Mbe") and apostrophes
+            first = " ".join(w.capitalize() for w in first.split())
+            last = " ".join(w.capitalize() for w in last.split())
             formatted_name = f"{first} {last}"
         else:
-            formatted_name = name_without_brackets  # If no comma, assume already correct
+            formatted_name = " ".join(w.capitalize() for w in name_without_brackets.split())
 
-        # Append all extracted bracketed parts at the end
+        # Append all extracted bracketed parts at the end (preserving original casing)
         if bracketed_parts:
-            formatted_name = f"{formatted_name} {' '.join(bracketed_parts)}"
+            suffix = ' '.join(bracketed_parts)
+            formatted_name = f"{formatted_name} {suffix}" if formatted_name else suffix
 
-        # Capitalize first letter of each word, except for 'née'
-        return formatted_name.title().replace('Née', 'née')
+        # Replace 'née' (lowercase) if it appears in a bracketed part
+        formatted_name = formatted_name.replace('Née', 'née')
+
+        return formatted_name
     
     def parse_notices(self, soup: BeautifulSoup) -> list[FamilyNotice]:
         """Parse notices from the BeautifulSoup object."""

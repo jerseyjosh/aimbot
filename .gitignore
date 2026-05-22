@@ -17,3 +17,6 @@ wheels/
 
 # email data cache
 cache/
+
+# runtime logs
+logs/
