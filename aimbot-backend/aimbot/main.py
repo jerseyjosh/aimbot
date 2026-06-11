@@ -1,4 +1,5 @@
 import asyncio
+import traceback
 from datetime import datetime
 from enum import Enum
 from typing import Union
@@ -77,7 +78,15 @@ async def get_news_story(url: str):
 @api_router.get("/emails/{email_type}", response_model=EmailData)
 async def fetch_email(email_type: EmailType):
     """Fetch email data for a specific email type, merging fresh scraped data with cached user edits"""
-    
+    try:
+        return await _fetch_email(email_type)
+    except HTTPException:
+        raise
+    except Exception as e:
+        detail = f"{type(e).__name__}: {e}\n\n{traceback.format_exc()}"
+        raise HTTPException(status_code=500, detail=detail)
+
+async def _fetch_email(email_type: EmailType):
     # Load cached data
     cached_data = email_cache.load(email_type.value) or {}
     
@@ -128,6 +137,7 @@ async def fetch_email(email_type: EmailType):
 
         scraper = GEScraper()
         weather_scraper = WeatherScraper.Gsy()
+
         tasks = {
             "news_stories": scraper.fetch_n_stories_for_section("news", limit=10),
             "sports_stories": scraper.fetch_n_stories_for_section("sport", limit=2),

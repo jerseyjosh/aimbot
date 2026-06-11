@@ -32,28 +32,21 @@
         activeField = Object.keys(emailData)[0];
     }
 
+    async function assertOk(response: Response, context: string): Promise<void> {
+        if (response.ok) return;
+        const text = await response.text();
+        let detail: string;
+        try { detail = JSON.parse(text)?.detail ?? text; }
+        catch { detail = text || `${response.status} ${response.statusText}`; }
+        throw new Error(`${context}: ${detail}`);
+    }
+
     // Fetch email data from backend
     async function fetchEmailData() {
         fetchingData = true;
         try {
             const response = await fetch(`/api/emails/${emailType}`);
-            if (!response.ok) {
-                let errorDetail = `${response.status} ${response.statusText}`;
-                try {
-                    const errorData = await response.json();
-                    errorDetail = errorData.detail || JSON.stringify(errorData);
-                } catch {
-                    try {
-                        const errorText = await response.text();
-                        if (errorText) {
-                            errorDetail = errorText;
-                        }
-                    } catch {
-                        // If response body can't be read, keep default status message
-                    }
-                }
-                throw new Error(`Failed to fetch email data: ${errorDetail}`);
-            }
+            await assertOk(response, 'Failed to fetch email data');
             emailData = await response.json();
             if (emailData) {
                 activeField = Object.keys(emailData)[0];
@@ -80,17 +73,7 @@
                 body: JSON.stringify(emailData)
             });
             
-            if (!response.ok) {
-                let errorDetail = response.statusText;
-                try {
-                    const errorData = await response.json();
-                    errorDetail = errorData.detail || errorDetail;
-                } catch {
-                    // If response isn't JSON, use statusText
-                }
-                throw new Error(`Failed to render email: ${errorDetail}`);
-            }
-            
+            await assertOk(response, 'Failed to render email');
             renderedEmail = await response.text();
         } catch (error) {
             console.error("Error rendering email:", error);
@@ -115,16 +98,7 @@
                 body: JSON.stringify(emailData)
             });
             
-            if (!response.ok) {
-                let errorDetail = response.statusText;
-                try {
-                    const errorData = await response.json();
-                    errorDetail = errorData.detail || errorDetail;
-                } catch {
-                    // If response isn't JSON, use statusText
-                }
-                throw new Error(`Failed to save email: ${errorDetail}`);
-            }
+            await assertOk(response, 'Failed to save email');
         } catch (error) {
             console.error("Error saving email:", error);
             alert(error instanceof Error ? error.message : "Failed to save email data");
