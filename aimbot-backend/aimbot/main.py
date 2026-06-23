@@ -18,6 +18,10 @@ from aimbot.scrapers.news.jep import JEPScraper
 from aimbot.scrapers.weather import WeatherScraper
 from aimbot.scrapers.family_notices import FamilyNoticesScraper
 
+# using the new wordpress scrapers to test
+from aimbot.scrapers.news.be_wp import BEWordpress
+from aimbot.scrapers.news.ge_wp import GEWordpress
+
 from aimbot.models.emails import (
     BEEmailData, ConnectInsiderEmailData, GEEmailData, 
     JEPEmailData, AIMPremiumEmailData, Foreword
@@ -92,7 +96,8 @@ async def _fetch_email(email_type: EmailType):
     
     if email_type == EmailType.BE:
 
-        scraper = BEScraper()
+        # scraper = BEScraper()
+        scraper = BEWordpress()
         weather_scraper = WeatherScraper.Jsy()
         fn_scraper = FamilyNoticesScraper()
         
@@ -135,7 +140,8 @@ async def _fetch_email(email_type: EmailType):
     
     elif email_type == EmailType.GE:
 
-        scraper = GEScraper()
+        # scraper = GEScraper()
+        scraper = GEWordpress()
         weather_scraper = WeatherScraper.Gsy()
 
         tasks = {
