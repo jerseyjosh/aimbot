@@ -31,7 +31,7 @@ class BaseScraper(ABC):
     #   "sports": "https://example.com/sports"
     # }
     sections: dict[str, str]
-    limiter = AsyncLimiter(max_rate=5, time_period=2) # 5 requests every 2 seconds
+    limiter = AsyncLimiter(max_rate=1, time_period=0.2) # 1 request every 200ms
     
     def __init__(self):
         raise NotImplementedError("BaseScraper is an abstract class and cannot be instantiated directly")
