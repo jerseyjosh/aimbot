@@ -24,6 +24,7 @@ from bs4 import BeautifulSoup
 import logging
 from pydantic import BaseModel
 import re
+import asyncio
 from typing import Optional
 from urllib.parse import urljoin
 
@@ -55,17 +56,24 @@ class FirstRecruitmentScraper:
         "Telecoms", "Trainee/Graduate", "Treasury", "Trust",
     }
     JOB_TYPES = {"Permanent", "Temporary", "Contract"}
-    USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15"
+    # Keep the browser identity internally consistent.  In particular, do not
+    # advertise Safari while sending an aiohttp/Linux request.
+    USER_AGENT = (
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    )
     HEADERS = {
         "User-Agent": USER_AGENT,
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
         "Accept-Language": "en-GB,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Referer": "https://www.1strecruit.co.uk/jobs/",
+        "Accept-Encoding": "gzip, deflate",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+        "Upgrade-Insecure-Requests": "1",
         "Sec-Fetch-Site": "same-origin",
         "Sec-Fetch-Mode": "navigate",
         "Sec-Fetch-Dest": "document",
-        "Priority": "u=0, i",
+        "Sec-Fetch-User": "?1",
     }
 
 
@@ -165,18 +173,69 @@ class FirstRecruitmentScraper:
         }
         # fetch data
         try:
-            async with aiohttp.ClientSession(headers=self.HEADERS) as session:
-                async with session.get(f"{self.url}/jobs/", params=params) as response:
+            timeout = aiohttp.ClientTimeout(total=30)
+            async with aiohttp.ClientSession(
+                headers=self.HEADERS,
+                timeout=timeout,
+                cookie_jar=aiohttp.CookieJar(unsafe=False),
+            ) as session:
+                # First visit the site so an edge service can set its normal
+                # session/consent cookies before the search request.
+                async with session.get(self.url, allow_redirects=True) as home:
                     logger.debug(
-                        "First Recruitment response: status=%s, url=%s, content_type=%r",
-                        response.status,
-                        response.url,
-                        response.headers.get("Content-Type"),
+                        "First Recruitment homepage: status=%s, url=%s, cookies=%s",
+                        home.status,
+                        home.url,
+                        list(session.cookie_jar),
                     )
-                    response.raise_for_status()
-                    html = await response.text()
-                    logger.debug("First Recruitment response body length: %d", len(html))
+                    await home.read()
+
+                jobs_headers = {
+                    "Referer": f"{self.url}/",
+                    "Sec-Fetch-Site": "same-origin",
+                }
+                for attempt in range(1, 4):
+                    async with session.get(
+                        f"{self.url}/jobs/",
+                        params=params,
+                        headers=jobs_headers,
+                        allow_redirects=True,
+                    ) as response:
+                        logger.debug(
+                            "First Recruitment response: attempt=%d, status=%s, url=%s, content_type=%r",
+                            attempt,
+                            response.status,
+                            response.url,
+                            response.headers.get("Content-Type"),
+                        )
+                        response.raise_for_status()
+                        html = await response.text()
+                        logger.debug("First Recruitment response body length: %d", len(html))
+
                     soup = BeautifulSoup(html, "html.parser")
+                    if response.status != 202 or soup.select_one(".result-item.job-item"):
+                        break
+                    # Some edge services briefly return 202 while establishing
+                    # a session. Reuse the same cookie jar for a short retry.
+                    if attempt < 3:
+                        await asyncio.sleep(attempt)
+
+                if not soup.select_one(".result-item.job-item"):
+                    logger.warning(
+                        "First Recruitment response does not contain job listings: "
+                        "status=%s, title=%r, headers=%r, body_prefix=%r",
+                        response.status,
+                        soup.title.get_text(" ", strip=True) if soup.title else "",
+                        {
+                            key: value
+                            for key, value in response.headers.items()
+                            if key.lower() in {
+                                "server", "location", "set-cookie", "retry-after",
+                                "cf-mitigated", "x-cache", "x-request-id",
+                            }
+                        },
+                        html[:300].replace("\n", " "),
+                    )
         except Exception:
             logger.exception(
                 "Failed to fetch or parse First Recruitment jobs "
@@ -213,4 +272,3 @@ if __name__ == "__main__":
     scraper = FirstRecruitmentScraper()
     jobs = asyncio.run(scraper.fetch_jobs())
     print(jobs)
-    breakpoint()
