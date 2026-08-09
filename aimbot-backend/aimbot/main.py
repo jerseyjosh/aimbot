@@ -17,6 +17,7 @@ from aimbot.scrapers.news.ge import GEScraper
 from aimbot.scrapers.news.jep import JEPScraper
 from aimbot.scrapers.weather import WeatherScraper
 from aimbot.scrapers.family_notices import FamilyNoticesScraper
+from aimbot.scrapers.jobs.first_recruitment import FirstRecruitmentScraper
 
 # using the new wordpress scrapers to test
 from aimbot.scrapers.news.be_wp import BEWordpress
@@ -93,6 +94,12 @@ async def fetch_email(email_type: EmailType):
 async def _fetch_email(email_type: EmailType):
     # Load cached data
     cached_data = email_cache.load(email_type.value) or {}
+
+    async def fetch_job_listings(location: str):
+        try:
+            return await FirstRecruitmentScraper().fetch_jobs(location=location, limit=6)
+        except Exception:
+            return []
     
     if email_type == EmailType.BE:
 
@@ -109,6 +116,7 @@ async def _fetch_email(email_type: EmailType):
             "community_stories": scraper.fetch_n_stories_for_section("community", limit=2),
             "podcast_stories": scraper.fetch_n_stories_for_section("podcasts", limit=2),
             "family_notices": fn_scraper.get_notices(),
+            "job_listings": fetch_job_listings("Jersey"),
             "weather": weather_scraper.get_weather()
         }
         results = await asyncio.gather(*tasks.values())
@@ -129,7 +137,8 @@ async def _fetch_email(email_type: EmailType):
             "connect_image_url": "",
             "community_stories": results.get('community_stories', []),
             "podcast_stories": results.get('podcast_stories', []),
-            "family_notices": results.get('family_notices', [])
+            "family_notices": results.get('family_notices', []),
+            "job_listings": results.get('job_listings', [])
         }
 
         for k in fresh_data.keys():
@@ -151,6 +160,7 @@ async def _fetch_email(email_type: EmailType):
             "business_stories": scraper.fetch_n_stories_for_section("business", limit=2),
             "community_stories": scraper.fetch_n_stories_for_section("community", limit=2),
             "podcast_stories": scraper.fetch_n_stories_for_section("podcasts", limit=2),
+            "job_listings": fetch_job_listings("Guernsey"),
             "weather": weather_scraper.get_weather()
         }
         results = await asyncio.gather(*tasks.values())
@@ -170,7 +180,8 @@ async def _fetch_email(email_type: EmailType):
             "business_stories": results.get('business_stories', []),
             "connect_image_url": "",
             "community_stories": results.get('community_stories', []),
-            "podcast_stories": results.get('podcast_stories', [])
+            "podcast_stories": results.get('podcast_stories', []),
+            "job_listings": results.get('job_listings', [])
         }
         for k in fresh_data.keys():
             if not fresh_data[k] and cached_data.get(k):

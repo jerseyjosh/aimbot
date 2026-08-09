@@ -4,6 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from .news import NewsStory, Advert, FamilyNotice, TopImage
+from aimbot.scrapers.jobs.first_recruitment import JobListing
 
 class BEEmailData(BaseModel):
     top_image: TopImage
@@ -21,6 +22,7 @@ class BEEmailData(BaseModel):
     community_stories: list[NewsStory]
     podcast_stories: list[NewsStory]
     family_notices: list[FamilyNotice]
+    job_listings: list[JobListing]
     
     def __repr__(self):
         return f"BEEmailData(date={self.date}, {len(self.news_stories)} news stories)"
@@ -40,6 +42,7 @@ class GEEmailData(BaseModel):
     connect_image_url: str
     community_stories: list[NewsStory]
     podcast_stories: list[NewsStory]
+    job_listings: list[JobListing]
 
     def __repr__(self):
         return f"GEEmailData(date={self.date}, {len(self.news_stories)} news stories)"

@@ -4537,7 +4537,7 @@
               {% endif %}
 
             <!-- LATEST JOBS SECTION -->
-             {% if latest_jobs | length > 0 %}
+             {% if job_listings | length > 0 %}
             <div class="div">
                <!-- BANNER -->
                <div class="layout one-col fixed-width stack"
@@ -4564,96 +4564,39 @@
                  <div class="layout__inner"
                    style="border-collapse: collapse;display: table;width: 100%;background-color: #ffffff;">
                    <!--[if mso]><table align="center" cellpadding="0" cellspacing="0" role="presentation"><tr class="layout-fixed-width" style="background-color: #ffffff;"><td style="width: 200px" valign="top" class="w160"><![endif]-->
+                   {% for column_index in range(3) %}
                    <div class="column"
                      style="text-align: left;color: #808285;font-size: 14px;line-height: 21px;font-family: Open Sans,sans-serif;max-width: 320px;min-width: 200px; width: 320px;width: calc(72200px - 12000%);Float: left;">
-   
-                     <div style="Margin-left: 20px;Margin-right: 20px;Margin-top: 24px;">
+                     {% for job in job_listings[column_index::3] %}
+                     <div style="Margin-left: 20px;Margin-right: 20px;{% if loop.first %}Margin-top: 24px;{% else %}Margin-bottom: 24px;{% endif %}">
                        <div style="mso-line-height-rule: exactly;mso-text-raise: 11px;vertical-align: middle;">
-                         <p style="Margin-top: 0;Margin-bottom: 20px;"><span
-                             style="text-decoration: inherit;color: #b01717;"><strong>Finance Manager,
-                               Operations</strong></span><br>
-                           <span style="text-decoration: inherit;color: #000000;"><strong>Full time |
-                               Permanent</strong><br>
-                             Ref: 24885</span>
+                         <p style="Margin-top: 0;Margin-bottom: {% if loop.first %}20px{% else %}0{% endif %};"><span
+                             style="text-decoration: inherit;color: #b01717;"><strong>{{ job.title }}</strong></span><br>
+                           <span style="text-decoration: inherit;color: #000000;"><strong>{{ job.job_types | join(' | ') }}</strong><br>
+                             Ref: {{ job.reference_number }}</span>
                          </p>
                        </div>
                      </div>
-   
-                     <div style="Margin-left: 20px;Margin-right: 20px;Margin-bottom: 24px;">
-                       <div style="mso-line-height-rule: exactly;mso-text-raise: 11px;vertical-align: middle;">
-                         <p style="Margin-top: 0;Margin-bottom: 0;"><span
-                             style="text-decoration: inherit;color: #b01717;"><strong>Finance Manager,
-                               Operations</strong></span><br>
-                           <span style="text-decoration: inherit;color: #000000;"><strong>Full time |
-                               Permanent</strong><br>
-                             Ref: 24885</span>
-                         </p>
-                       </div>
-                     </div>
-   
+                     {% endfor %}
                    </div>
+                   {% if column_index < 2 %}
                    <!--[if mso]></td><td style="width: 200px" valign="top" class="w160"><![endif]-->
-                   <div class="column"
-                     style="text-align: left;color: #808285;font-size: 14px;line-height: 21px;font-family: Open Sans,sans-serif;max-width: 320px;min-width: 200px; width: 320px;width: calc(72200px - 12000%);Float: left;">
-   
-                     <div style="Margin-left: 20px;Margin-right: 20px;Margin-top: 24px;">
-                       <div style="mso-line-height-rule: exactly;mso-text-raise: 11px;vertical-align: middle;">
-                         <p style="Margin-top: 0;Margin-bottom: 20px;"><span
-                             style="text-decoration: inherit;color: #b01717;"><strong>Finance Manager,
-                               Operations</strong></span><br>
-                           <span style="text-decoration: inherit;color: #000000;"><strong>Full time |
-                               Permanent</strong><br>
-                             Ref: 24885</span>
-                         </p>
-                       </div>
-                     </div>
-   
-                     <div style="Margin-left: 20px;Margin-right: 20px;Margin-bottom: 24px;">
-                       <div style="mso-line-height-rule: exactly;mso-text-raise: 11px;vertical-align: middle;">
-                         <p style="Margin-top: 0;Margin-bottom: 0;"><span
-                             style="text-decoration: inherit;color: #b01717;"><strong>Finance Manager,
-                               Operations</strong></span><br>
-                           <span style="text-decoration: inherit;color: #000000;"><strong>Full time |
-                               Permanent</strong><br>
-                             Ref: 24885</span>
-                         </p>
-                       </div>
-                     </div>
-   
-                   </div>
-                   <!--[if mso]></td><td style="width: 200px" valign="top" class="w160"><![endif]-->
-                   <div class="column"
-                     style="text-align: left;color: #808285;font-size: 14px;line-height: 21px;font-family: Open Sans,sans-serif;max-width: 320px;min-width: 200px; width: 320px;width: calc(72200px - 12000%);Float: left;">
-   
-                     <div style="Margin-left: 20px;Margin-right: 20px;Margin-top: 24px;">
-                       <div style="mso-line-height-rule: exactly;mso-text-raise: 11px;vertical-align: middle;">
-                         <p style="Margin-top: 0;Margin-bottom: 20px;"><span
-                             style="text-decoration: inherit;color: #b01717;"><strong>Finance Manager,
-                               Operations</strong></span><br>
-                           <span style="text-decoration: inherit;color: #000000;"><strong>Full time |
-                               Permanent</strong><br>
-                             Ref: 24885</span>
-                         </p>
-                       </div>
-                     </div>
-   
-                     <div style="Margin-left: 20px;Margin-right: 20px;Margin-bottom: 24px;">
-                       <div style="mso-line-height-rule: exactly;mso-text-raise: 11px;vertical-align: middle;">
-                         <p style="Margin-top: 0;Margin-bottom: 0;"><span
-                             style="text-decoration: inherit;color: #b01717;"><strong>Finance Manager,
-                               Operations</strong></span><br>
-                           <span style="text-decoration: inherit;color: #000000;"><strong>Full time |
-                               Permanent</strong><br>
-                             Ref: 24885</span>
-                         </p>
-                       </div>
-                     </div>
-   
-                   </div>
+                   {% endif %}
+                   {% endfor %}
                    <!--[if mso]></td></tr></table><![endif]-->
                  </div>
                </div>
              </div>
+             <!-- SEPARATOR -->
+              <div
+                style="
+                  mso-line-height-rule: exactly;
+                  line-height: 20px;
+                  font-size: 20px;
+                "
+              >
+                &nbsp;
+              </div>
               {% endif %}
 
               {% if family_notices | length > 0 %}

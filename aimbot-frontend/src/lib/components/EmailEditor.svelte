@@ -229,7 +229,7 @@
                     <!-- Data editor for list of objects -->
                     <ArrayEditor 
                         items={emailData[activeField]} 
-                        itemTemplate={activeField.includes('advert') ? { url: '', image_url: '' } : activeField.endsWith('_stories') ? { headline: '', text: '', date: '', author: '', url: '', image_url: '' } : null} />
+                        itemTemplate={activeField.includes('advert') ? { url: '', image_url: '' } : activeField.endsWith('_stories') ? { headline: '', text: '', date: '', author: '', url: '', image_url: '' } : activeField === 'job_listings' ? { title: '', job_types: [], reference_number: '', location: '', url: '' } : null} />
 
                 {:else if typeof emailData[activeField] === 'object' && emailData[activeField] !== null}
                     <!-- Object editor for single objects with multiple fields -->

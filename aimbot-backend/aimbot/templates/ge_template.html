@@ -3738,6 +3738,69 @@
                 &nbsp;
               </div>
 
+            <!-- LATEST JOBS SECTION -->
+             {% if job_listings | length > 0 %}
+            <div class="div">
+               <!-- BANNER -->
+               <div class="layout one-col fixed-width stack"
+                 style="Margin: 0 auto;max-width: 600px;min-width: 320px; width: 320px;width: calc(28000% - 167400px);overflow-wrap: break-word;word-wrap: break-word;word-break: break-word;">
+                 <div class="layout__inner"
+                   style="border-collapse: collapse;display: table;width: 100%;background-color: #ffffff;">
+                   <!--[if mso]><table align="center" cellpadding="0" cellspacing="0" role="presentation"><tr class="layout-fixed-width" style="background-color: #ffffff;"><td style="width: 600px" class="w560"><![endif]-->
+                   <div class="column"
+                     style="text-align: left;color: #808285;font-size: 14px;line-height: 21px;font-family: Open Sans,sans-serif;">
+   
+                     <div style="font-size: 12px;font-style: normal;font-weight: normal;line-height: 19px;" align="center">
+                       <img style="border: 0;display: block;height: auto;width: 100%;max-width: 600px;" alt="" width="600"
+                         src="https://i9.cmail19.com/ei/d/D3/66C/0B1/022848/csfinal/LatestJobsinJersey2-9900000000079e3c.png">
+                     </div>
+   
+                   </div>
+                   <!--[if mso]></td></tr></table><![endif]-->
+                 </div>
+               </div>
+   
+               <!-- LISTINGS -->
+               <div class="layout three-col fixed-width stack"
+                 style="Margin: 0 auto;max-width: 600px;min-width: 320px; width: 320px;width: calc(28000% - 167400px);overflow-wrap: break-word;word-wrap: break-word;word-break: break-word;">
+                 <div class="layout__inner"
+                   style="border-collapse: collapse;display: table;width: 100%;background-color: #ffffff;">
+                   <!--[if mso]><table align="center" cellpadding="0" cellspacing="0" role="presentation"><tr class="layout-fixed-width" style="background-color: #ffffff;"><td style="width: 200px" valign="top" class="w160"><![endif]-->
+                   {% for column_index in range(3) %}
+                   <div class="column"
+                     style="text-align: left;color: #808285;font-size: 14px;line-height: 21px;font-family: Open Sans,sans-serif;max-width: 320px;min-width: 200px; width: 320px;width: calc(72200px - 12000%);Float: left;">
+                     {% for job in job_listings[column_index::3] %}
+                     <div style="Margin-left: 20px;Margin-right: 20px;{% if loop.first %}Margin-top: 24px;{% else %}Margin-bottom: 24px;{% endif %}">
+                       <div style="mso-line-height-rule: exactly;mso-text-raise: 11px;vertical-align: middle;">
+                         <p style="Margin-top: 0;Margin-bottom: {% if loop.first %}20px{% else %}0{% endif %};"><span
+                             style="text-decoration: inherit;color: #b01717;"><strong>{{ job.title }}</strong></span><br>
+                           <span style="text-decoration: inherit;color: #000000;"><strong>{{ job.job_types | join(' | ') }}</strong><br>
+                             Ref: {{ job.reference_number }}</span>
+                         </p>
+                       </div>
+                     </div>
+                     {% endfor %}
+                   </div>
+                   {% if column_index < 2 %}
+                   <!--[if mso]></td><td style="width: 200px" valign="top" class="w160"><![endif]-->
+                   {% endif %}
+                   {% endfor %}
+                   <!--[if mso]></td></tr></table><![endif]-->
+                 </div>
+               </div>
+             </div>
+             <!-- SEPARATOR -->
+              <div
+                style="
+                  mso-line-height-rule: exactly;
+                  line-height: 20px;
+                  font-size: 20px;
+                "
+              >
+                &nbsp;
+              </div>
+              {% endif %}
+
               <!-- HORIZONTAL ADVERT -->
               {% if horizontal_adverts|length > 0 %}
               {% set advert = horizontal_adverts.pop(0) %}
