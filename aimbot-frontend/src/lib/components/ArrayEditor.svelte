@@ -23,6 +23,20 @@
     let editingItem: any = null;
     let isAddingNew = false; // Track if we're adding a new item
 
+    function isArrayColumn(column: string): boolean {
+        const template = itemTemplate || (items.length > 0 ? items[0] : null);
+        return Array.isArray(template?.[column]);
+    }
+
+    function updateEditingValue(column: string, value: string) {
+        editingItem = {
+            ...editingItem,
+            [column]: isArrayColumn(column)
+                ? value.split(',').map(item => item.trim()).filter(Boolean)
+                : value,
+        };
+    }
+
     // When dragging starts, store which row we're dragging
     function handleDragStart(index: number) {
         draggedIndex = index;
@@ -91,7 +105,9 @@
         const template = itemTemplate || (items.length > 0 ? items[0] : columns.reduce((acc, col) => ({ ...acc, [col]: '' }), {}));
         
         Object.keys(template).forEach(column => {
-            newItem[column] = ''; // Initialize all fields as empty strings
+            // Preserve array fields from the template (for example,
+            // JobListing.job_types). Pydantic expects an array, not "".
+            newItem[column] = Array.isArray(template[column]) ? [] : '';
         });
         
         // Don't add to array yet - just open modal
@@ -184,7 +200,8 @@
                                 type="text" 
                                 class="form-control"
                                 id="edit-{column}"
-                                bind:value={editingItem[column]} />
+                                value={isArrayColumn(column) ? editingItem[column].join(', ') : editingItem[column]}
+                                on:input={(event) => updateEditingValue(column, (event.currentTarget as HTMLInputElement).value)} />
                         </div>
                     {/each}
                 </div>

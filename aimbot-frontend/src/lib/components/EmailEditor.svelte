@@ -32,13 +32,30 @@
         activeField = Object.keys(emailData)[0];
     }
 
+    function formatErrorDetail(detail: unknown): string {
+        if (Array.isArray(detail)) {
+            return detail.map((issue: any) => {
+                if (issue && typeof issue === 'object') {
+                    const location = Array.isArray(issue.loc)
+                        ? issue.loc.filter((part: unknown) => part !== 'body').join('.')
+                        : '';
+                    const message = issue.msg ?? JSON.stringify(issue);
+                    return location ? `${location}: ${message}` : message;
+                }
+                return String(issue);
+            }).join('\n');
+        }
+        if (detail && typeof detail === 'object') return JSON.stringify(detail);
+        return String(detail);
+    }
+
     async function assertOk(response: Response, context: string): Promise<void> {
         if (response.ok) return;
         const text = await response.text();
-        let detail: string;
+        let detail: unknown;
         try { detail = JSON.parse(text)?.detail ?? text; }
         catch { detail = text || `${response.status} ${response.statusText}`; }
-        throw new Error(`${context}: ${detail}`);
+        throw new Error(`${context}: ${formatErrorDetail(detail)}`);
     }
 
     // Fetch email data from backend

@@ -323,7 +323,7 @@ class FirstRecruitmentScraper:
         )
         return results
 
-    async def fetch_jobs_search(
+    async def fetch_jobs(
         self,
         location: str = "Jersey",
         job_types: Optional[list[str]] = None,
@@ -445,7 +445,7 @@ class FirstRecruitmentScraper:
             )
             raise
 
-    async def fetch_jobs(
+    async def fetch_latest_jobs(
         self,
         location: Optional[str] = None,
         job_types: Optional[list[str]] = None,
