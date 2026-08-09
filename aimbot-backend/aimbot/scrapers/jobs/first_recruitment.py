@@ -21,10 +21,14 @@ Priority: u=0, i
 
 import aiohttp
 from bs4 import BeautifulSoup
+import logging
 from pydantic import BaseModel
 import re
 from typing import Optional
 from urllib.parse import urljoin
+
+
+logger = logging.getLogger(__name__)
 
 
 class JobListing(BaseModel):
@@ -113,8 +117,18 @@ class FirstRecruitmentScraper:
             raise ValueError("limit must be non-negative")
 
         elements = soup.select(".result-item.job-item")
+        logger.debug("First Recruitment page contains %d matching job element(s)", len(elements))
         if limit is not None:
             elements = elements[:limit]
+        if not elements:
+            logger.warning(
+                "First Recruitment returned no matching job elements "
+                "(requested_location=%r, limit=%r, page_title=%r, body_length=%d)",
+                requested_location,
+                limit,
+                soup.title.get_text(" ", strip=True) if soup.title else "",
+                len(soup.get_text()),
+            )
         return [cls.parse_job_listing(element, requested_location) for element in elements]
 
     async def fetch_jobs(
@@ -125,13 +139,22 @@ class FirstRecruitmentScraper:
         limit: Optional[int] = 5,
     ) -> list[JobListing]:
         """Fetch jobs from 1st Recruitment website."""
+        logger.debug(
+            "Fetching First Recruitment jobs (location=%r, job_types=%r, sector=%r, limit=%r)",
+            location,
+            job_types,
+            sector,
+            limit,
+        )
         if job_types is None:
             job_types = ["Permanent", "Temporary", "Contract"]
         invalid_job_types = set(job_types) - self.JOB_TYPES
         if invalid_job_types:
+            logger.error("Invalid First Recruitment job type(s): %s", sorted(invalid_job_types))
             raise ValueError(f"Invalid job type(s): {', '.join(sorted(invalid_job_types))}")
         # validate sector
         if sector and sector not in self.VALID_SECTORS:
+            logger.error("Invalid First Recruitment sector: %r", sector)
             raise ValueError(f"Invalid sector '{sector}'. Valid sectors are: {', '.join(self.VALID_SECTORS)}")
         # build query params
         params = {
@@ -141,16 +164,52 @@ class FirstRecruitmentScraper:
             "jobtype": job_types,
         }
         # fetch data
-        async with aiohttp.ClientSession(headers=self.HEADERS) as session:
-            async with session.get(f"{self.url}/jobs/", params=params) as response:
-                response.raise_for_status()
-                html = await response.text()
-                soup = BeautifulSoup(html, "html.parser")
-        return self.parse_jobs(soup, limit=limit, requested_location=location)
+        try:
+            async with aiohttp.ClientSession(headers=self.HEADERS) as session:
+                async with session.get(f"{self.url}/jobs/", params=params) as response:
+                    logger.debug(
+                        "First Recruitment response: status=%s, url=%s, content_type=%r",
+                        response.status,
+                        response.url,
+                        response.headers.get("Content-Type"),
+                    )
+                    response.raise_for_status()
+                    html = await response.text()
+                    logger.debug("First Recruitment response body length: %d", len(html))
+                    soup = BeautifulSoup(html, "html.parser")
+        except Exception:
+            logger.exception(
+                "Failed to fetch or parse First Recruitment jobs "
+                "(location=%r, job_types=%r, sector=%r, limit=%r, params=%r)",
+                location,
+                job_types,
+                sector,
+                limit,
+                params,
+            )
+            raise
+        try:
+            return self.parse_jobs(soup, limit=limit, requested_location=location)
+        except Exception:
+            logger.exception(
+                "Failed to parse First Recruitment jobs "
+                "(location=%r, job_types=%r, sector=%r, limit=%r)",
+                location,
+                job_types,
+                sector,
+                limit,
+            )
+            raise
 
 
 if __name__ == "__main__":
     import asyncio
+
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+
     scraper = FirstRecruitmentScraper()
     jobs = asyncio.run(scraper.fetch_jobs())
     print(jobs)
