@@ -981,7 +981,7 @@ table{mso-table-lspace:0pt;mso-table-rspace:0pt;mso-line-height-rule:exactly}.si
 
 
                   <!-- GOOD MORNING INSIDER -->
-                  {% set story = big_stories.pop(0) %}
+                  {% set story = big_stories.pop(0) if big_stories else none %}
                   <div style="Margin-left: 20px;Margin-right: 20px;Margin-top: 20px;">
                     <div style="mso-line-height-rule: exactly;mso-text-raise: 11px;vertical-align: middle;">
                       <h2

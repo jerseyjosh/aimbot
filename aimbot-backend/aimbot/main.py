@@ -1,4 +1,6 @@
 import asyncio
+import json
+import logging
 import traceback
 from datetime import datetime
 from enum import Enum
@@ -34,7 +36,12 @@ from aimbot.cache import EmailCache, merge_with_cache
 
 EmailData = Union[BEEmailData, ConnectInsiderEmailData, GEEmailData, JEPEmailData, AIMPremiumEmailData]
 
+logger = logging.getLogger(__name__)
+
 app = FastAPI()
+
+# Header used to report non-fatal errors when fetching email data
+EMAIL_WARNINGS_HEADER = "X-Email-Warnings"
 
 # Create API router with /api prefix
 from fastapi import APIRouter
@@ -46,6 +53,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=[EMAIL_WARNINGS_HEADER],
 )
 
 # Path to the built Svelte app (we'll mount this at the end)
@@ -80,17 +88,49 @@ async def get_news_story(url: str):
         raise HTTPException(status_code=400, detail=f"Unknown news source. Supported: bailiwickexpress.com, jerseyeveningpost.com")
 
 @api_router.get("/emails/{email_type}", response_model=EmailData)
-async def fetch_email(email_type: EmailType):
-    """Fetch email data for a specific email type, merging fresh scraped data with cached user edits"""
+async def fetch_email(email_type: EmailType, response: Response):
+    """Fetch email data for a specific email type, merging fresh scraped data with cached user edits.
+
+    Scraper failures are non-fatal: the endpoint still returns a (possibly empty)
+    email template so the user can edit it by hand. Any errors encountered while
+    scraping are reported via the ``X-Email-Warnings`` response header.
+    """
+    warnings: list[str] = []
     try:
-        return await _fetch_email(email_type)
+        email_data = await _fetch_email(email_type, warnings)
     except HTTPException:
         raise
     except Exception as e:
         detail = f"{type(e).__name__}: {e}\n\n{traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=detail)
 
-async def _fetch_email(email_type: EmailType):
+    if warnings:
+        response.headers[EMAIL_WARNINGS_HEADER] = json.dumps(warnings)
+
+    return email_data
+
+
+async def _gather_tasks(tasks: dict, warnings: list[str]) -> dict:
+    """Run async tasks concurrently, capturing individual failures as warnings.
+
+    Unlike a plain ``asyncio.gather``, a failure in one task does not abort the
+    others. The returned dict maps each task key to its result, or ``None`` when
+    that task failed.
+    """
+    keys = list(tasks.keys())
+    results = await asyncio.gather(*tasks.values(), return_exceptions=True)
+    output: dict = {}
+    for key, result in zip(keys, results):
+        if isinstance(result, BaseException):
+            logger.warning("Failed to fetch '%s' for email data: %s", key, result)
+            warnings.append(f"{key}: {type(result).__name__}: {result}")
+            output[key] = None
+        else:
+            output[key] = result
+    return output
+
+
+async def _fetch_email(email_type: EmailType, warnings: list[str]):
     # Load cached data
     cached_data = email_cache.load(email_type.value) or {}
     
@@ -111,25 +151,25 @@ async def _fetch_email(email_type: EmailType):
             "family_notices": fn_scraper.get_notices(),
             "weather": weather_scraper.get_weather()
         }
-        results = await asyncio.gather(*tasks.values())
-        results = dict(zip(tasks.keys(), results))
+        results = await _gather_tasks(tasks, warnings)
+        weather = results.get('weather')
 
         fresh_data = {
             "top_image": TopImage(),
-            "tides": results['weather'].tides,
-            "weather": results['weather'].weather,
+            "tides": weather.tides if weather else "",
+            "weather": weather.weather if weather else "",
             "date": datetime.now().strftime("%-d %B %Y"),
-            "news_stories": results.get('news_stories', []),
+            "news_stories": results.get('news_stories') or [],
             "horizontal_adverts": [],
             "vertical_adverts": [],
             "spon_con_stories": [],
-            "opinion_stories": results.get('opinion_stories', []),
-            "sports_stories": results.get('sports_stories', []),
-            "business_stories": results.get('business_stories', []),
+            "opinion_stories": results.get('opinion_stories') or [],
+            "sports_stories": results.get('sports_stories') or [],
+            "business_stories": results.get('business_stories') or [],
             "connect_image_url": "",
-            "community_stories": results.get('community_stories', []),
-            "podcast_stories": results.get('podcast_stories', []),
-            "family_notices": results.get('family_notices', [])
+            "community_stories": results.get('community_stories') or [],
+            "podcast_stories": results.get('podcast_stories') or [],
+            "family_notices": results.get('family_notices') or []
         }
 
         for k in fresh_data.keys():
@@ -153,24 +193,24 @@ async def _fetch_email(email_type: EmailType):
             "podcast_stories": scraper.fetch_n_stories_for_section("podcasts", limit=2),
             "weather": weather_scraper.get_weather()
         }
-        results = await asyncio.gather(*tasks.values())
-        results = dict(zip(tasks.keys(), results))
-        
+        results = await _gather_tasks(tasks, warnings)
+        weather = results.get('weather')
+
         fresh_data = {
             "top_image": TopImage(),
-            "tides": results['weather'].tides,
-            "weather": results['weather'].weather,
+            "tides": weather.tides if weather else "",
+            "weather": weather.weather if weather else "",
             "date": datetime.now().strftime("%-d %B %Y"),
-            "news_stories": results.get('news_stories', []),
+            "news_stories": results.get('news_stories') or [],
             "horizontal_adverts": [],
             "vertical_adverts": [],
-            "opinion_stories": results.get('opinion_stories', []),
+            "opinion_stories": results.get('opinion_stories') or [],
             "spon_con_stories": [],
-            "sports_stories": results.get('sports_stories', []),
-            "business_stories": results.get('business_stories', []),
+            "sports_stories": results.get('sports_stories') or [],
+            "business_stories": results.get('business_stories') or [],
             "connect_image_url": "",
-            "community_stories": results.get('community_stories', []),
-            "podcast_stories": results.get('podcast_stories', [])
+            "community_stories": results.get('community_stories') or [],
+            "podcast_stories": results.get('podcast_stories') or []
         }
         for k in fresh_data.keys():
             if not fresh_data[k] and cached_data.get(k):
@@ -180,8 +220,13 @@ async def _fetch_email(email_type: EmailType):
     elif email_type == EmailType.JEP:
 
         scraper = JEPScraper()
-        news_stories = await scraper.fetch_n_stories_for_section("news")
-        
+        try:
+            news_stories = await scraper.fetch_n_stories_for_section("news")
+        except Exception as e:
+            logger.warning("Failed to fetch JEP news stories: %s", e)
+            warnings.append(f"news_stories: {type(e).__name__}: {e}")
+            news_stories = []
+
         fresh_data = {
             "date": datetime.now().strftime("%-d %B %Y"),
             "jep_cover_url": "",    
@@ -201,8 +246,13 @@ async def _fetch_email(email_type: EmailType):
     elif email_type == EmailType.AIMPremium:
 
         scraper = JEPScraper()
-        news_stories = await scraper.fetch_n_stories_for_section("premium")
-        
+        try:
+            news_stories = await scraper.fetch_n_stories_for_section("premium")
+        except Exception as e:
+            logger.warning("Failed to fetch AIM Premium stories: %s", e)
+            warnings.append(f"news_stories: {type(e).__name__}: {e}")
+            news_stories = []
+
         fresh_data = {
             "title": "",
             "news_stories": news_stories,
@@ -215,11 +265,16 @@ async def _fetch_email(email_type: EmailType):
     
     elif email_type in [EmailType.INSIDER_JSY, EmailType.INSIDER_GSY]:
         scraper = BEScraper() if email_type == EmailType.INSIDER_JSY else GEScraper()
-        business_stories = await scraper.fetch_n_stories_for_section("business", limit=10)
+        try:
+            business_stories = await scraper.fetch_n_stories_for_section("business", limit=10)
+        except Exception as e:
+            logger.warning("Failed to fetch %s business stories: %s", email_type.value, e)
+            warnings.append(f"business_stories: {type(e).__name__}: {e}")
+            business_stories = []
         fresh_data = {
             "top_image": TopImage(),
             "big_stories": business_stories,
-            "sponsored_stories": [business_stories[0]],
+            "sponsored_stories": [business_stories[0]] if business_stories else [],
             "movers_and_shakers": business_stories,
             "connect_image_url": "",
             "ads": []
