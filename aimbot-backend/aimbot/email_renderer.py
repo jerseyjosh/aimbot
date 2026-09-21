@@ -12,7 +12,13 @@ class EmailRenderer:
         # Get the templates directory relative to this file
         templates_dir = Path(__file__).parent / "templates"
         self.template_loader = jinja2.FileSystemLoader(templates_dir)
-        self.template_env = jinja2.Environment(loader=self.template_loader)
+        # ChainableUndefined lets templates render even when sections are empty or
+        # partially filled (e.g. `news_stories[0].headline` with no stories),
+        # producing a usable email the user can finish off by hand.
+        self.template_env = jinja2.Environment(
+            loader=self.template_loader,
+            undefined=jinja2.ChainableUndefined,
+        )
         self.template_env.filters["first_sentence"] = self.first_sentence
         self.template = self.template_env.get_template(self.template_name)
 

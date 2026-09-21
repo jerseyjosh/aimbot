@@ -14,6 +14,7 @@
     let activeField: string = "";
     let fetchingData: boolean = false;
     let renderingData: boolean = false;
+    let fetchWarnings: string[] = [];
     
     // Add story modal state
     let showAddStoryModal = false;
@@ -58,19 +59,36 @@
         throw new Error(`${context}: ${formatErrorDetail(detail)}`);
     }
 
-    // Fetch email data from backend
+    // Fetch email data from backend. Non-fatal scraping errors are reported via
+    // the X-Email-Warnings header and surfaced as a dismissable banner, while the
+    // (possibly partially complete) email data is still loaded so it can be edited.
     async function fetchEmailData() {
         fetchingData = true;
+        fetchWarnings = [];
         try {
             const response = await fetch(`/api/emails/${emailType}`);
             await assertOk(response, 'Failed to fetch email data');
+
+            const warningHeader = response.headers.get('X-Email-Warnings');
+            if (warningHeader) {
+                try {
+                    const parsed = JSON.parse(warningHeader);
+                    fetchWarnings = Array.isArray(parsed) ? parsed : [warningHeader];
+                } catch {
+                    fetchWarnings = [warningHeader];
+                }
+            }
+
             emailData = await response.json();
             if (emailData) {
                 activeField = Object.keys(emailData)[0];
             }
         } catch (error) {
             console.error("Error fetching email data:", error);
-            alert(error instanceof Error ? error.message : "Failed to fetch email data");
+            fetchWarnings = [
+                ...fetchWarnings,
+                error instanceof Error ? error.message : "Failed to fetch email data"
+            ];
         } finally {
             fetchingData = false;
         }
@@ -197,6 +215,24 @@
             {/if}
         </div>
     </div>
+
+    <!-- Non-fatal fetch warnings -->
+    {#if fetchWarnings.length > 0}
+        <div class="alert alert-warning alert-dismissible" role="alert">
+            <strong>Some email data could not be fetched.</strong>
+            You can still edit the email below and add stories manually.
+            <ul class="mb-0 mt-1">
+                {#each fetchWarnings as warning}
+                    <li>{warning}</li>
+                {/each}
+            </ul>
+            <button
+                type="button"
+                class="btn-close"
+                aria-label="Close"
+                on:click={() => fetchWarnings = []}></button>
+        </div>
+    {/if}
 
     <!-- Email not loaded warning -->
     {#if !emailData}
