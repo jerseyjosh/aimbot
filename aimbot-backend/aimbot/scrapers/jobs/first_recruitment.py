@@ -26,7 +26,7 @@ from pydantic import BaseModel
 import re
 import asyncio
 from typing import Optional
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urljoin
 
 
 logger = logging.getLogger(__name__)
@@ -145,14 +145,13 @@ class FirstRecruitmentScraper:
         return re.sub(r"\s+", " ", value or "").strip()
 
     @classmethod
-    def parse_latest_job_listing(cls, element, title_element=None) -> JobListing:
+    def parse_latest_job_listing(cls, element) -> JobListing:
         """Parse one job card from the homepage latest-jobs section."""
+        title_element = element.select_one(
+            ".j-heading a, .job-title a, .latest-job-title a, h1 a, h2 a, h3 a, h4 a"
+        )
         if title_element is None:
-            title_element = element.select_one(
-                ".j-heading a, .job-title a, .latest-job-title a, h1 a, h2 a, h3 a, h4 a"
-            )
-            if title_element is None:
-                title_element = element.select_one("a[href]")
+            title_element = element.select_one("a[href]")
 
         text = cls._normalise_text(element.get_text(" ", strip=True))
         attributes = [
@@ -193,50 +192,11 @@ class FirstRecruitmentScraper:
             url=urljoin(cls.BASE_URL, title_element.get("href", "")) if title_element else "",
         )
 
-    @staticmethod
-    def _latest_job_card(link, container):
-        """Return the smallest row/card around a homepage job link."""
-        fallback = link.parent
-        node = link.parent
-        while node is not None and node is not container:
-            classes = node.get("class", [])
-            if node.name in {"tr", "li", "article"}:
-                return node
-            if any(
-                marker in class_name.casefold()
-                for class_name in classes
-                for marker in ("job", "vacancy", "result")
-            ):
-                return node
-            fallback = node
-            node = node.parent
-        return fallback
-
-    @classmethod
-    def parse_homepage_job_row(cls, row) -> JobListing:
-        """Parse a four-column ``.job-listing-content`` homepage row."""
-        spans = row.find_all("span", recursive=False)
-        if len(spans) < 4:
-            spans = row.select("span")
-        title_span, location_span, type_span, reference_span = spans[:4]
-        title_link = title_span.select_one("a[href]")
-        job_type = cls._normalise_text(type_span.get_text(" ", strip=True))
-        reference_number = cls._normalise_text(reference_span.get_text(" ", strip=True))
-        reference_number = re.sub(r"^(?:ref(?:erence)?\s*:?\s*)", "", reference_number, flags=re.I)
-
-        return JobListing(
-            title=cls._normalise_text(title_span.get_text(" ", strip=True)),
-            job_types=[job_type] if job_type in cls.JOB_TYPES else [],
-            reference_number=reference_number,
-            location=cls._normalise_text(location_span.get_text(" ", strip=True)),
-            url=urljoin(cls.BASE_URL, title_link.get("href", "")) if title_link else "",
-        )
-
     @classmethod
     def parse_latest_jobs(
         cls,
         soup: BeautifulSoup,
-        location: Optional[str] = None,
+        location: str | None = "",
         job_types: Optional[list[str]] = None,
         limit: Optional[int] = None,
     ) -> list[JobListing]:
@@ -244,56 +204,29 @@ class FirstRecruitmentScraper:
         if limit is not None and limit < 0:
             raise ValueError("limit must be non-negative")
 
-        requested = cls._normalise_text(location).casefold()
-        # The current homepage uses four spans in this fixed order: title,
-        # location, employment type, and reference number. Select only the
-        # innermost matching elements so a parent wrapper is not mistaken for
-        # one job row.
-        homepage_rows = [
-            row
-            for row in soup.select(".latest-jobs .job-listing-content")
-            if len(row.find_all("span", recursive=False)) >= 4
-        ]
-        if homepage_rows:
-            results = []
-            for row in homepage_rows:
-                listing = cls.parse_homepage_job_row(row)
-                if requested and listing.location.casefold() != requested:
-                    continue
-                if job_types and listing.job_types and not set(listing.job_types).intersection(job_types):
-                    continue
-                if listing.title:
-                    results.append(listing)
-                if limit is not None and len(results) >= limit:
-                    break
-            logger.debug(
-                "First Recruitment homepage contains %d job-listing-content row(s), "
-                "%d matching listing(s) for location=%r",
-                len(homepage_rows), len(results), location,
-            )
-            return results
-
         containers = soup.select("div.latest-jobs.match-height") or soup.select(".latest-jobs")
-        candidates = []
-        # Treat job-detail URLs as the source of truth. The homepage has used
-        # both a table and cards, but each listing has its own job URL.
+        cards = []
+        # The latest-jobs class is sometimes applied to the wrapper around
+        # several rows, rather than to each individual job. Prefer the first
+        # descendant level that clearly contains separate job entries.
         for container in containers:
-            for link in container.select("a[href]"):
-                path = urlsplit(link.get("href", "")).path.rstrip("/").casefold()
-                if "/job" not in path or path in {"/job", "/jobs"}:
-                    continue
-                candidates.append((cls._latest_job_card(link, container), link))
-        if not candidates:
+            nested = []
+            for selector in (".job-item", ".latest-job", "article", "tr", "li"):
+                nested = [item for item in container.select(selector) if item.select_one("a[href]")]
+                if nested:
+                    break
+            cards.extend(nested or [container])
+        if not cards:
             logger.warning(
-                "First Recruitment homepage contains no latest-jobs links "
+                "First Recruitment homepage contains no latest-jobs cards "
                 "(page_title=%r, body_length=%d)",
                 soup.title.get_text(" ", strip=True) if soup.title else "",
                 len(soup.get_text()),
             )
+        requested = cls._normalise_text(location).casefold()
         results = []
-        seen_urls = set()
-        for card, link in candidates:
-            listing = cls.parse_latest_job_listing(card, title_element=link)
+        for card in cards:
+            listing = cls.parse_latest_job_listing(card)
             actual = cls._normalise_text(listing.location).casefold()
             if requested:
                 # Prefer the parsed location, but support tables where the
@@ -309,21 +242,17 @@ class FirstRecruitmentScraper:
             if job_types and listing.job_types and not set(listing.job_types).intersection(job_types):
                 continue
             if listing.title and listing.url:
-                if listing.url in seen_urls:
-                    continue
-                seen_urls.add(listing.url)
                 results.append(listing)
             if limit is not None and len(results) >= limit:
                 break
 
         logger.debug(
-            "First Recruitment homepage contains %d wrapper(s), %d candidate job link(s), "
-            "%d matching listing(s) for location=%r",
-            len(containers), len(candidates), len(results), location,
+            "First Recruitment homepage contains %d latest-job card(s), %d matching location=%r",
+            len(cards), len(results), location,
         )
         return results
 
-    async def fetch_jobs(
+    async def fetch_jobs_search(
         self,
         location: str = "Jersey",
         job_types: Optional[list[str]] = None,
@@ -445,9 +374,9 @@ class FirstRecruitmentScraper:
             )
             raise
 
-    async def fetch_latest_jobs(
+    async def fetch_jobs(
         self,
-        location: Optional[str] = None,
+        location: str | None = None,
         job_types: Optional[list[str]] = None,
         sector: str = None,
         limit: Optional[int] = 5,
@@ -494,3 +423,4 @@ if __name__ == "__main__":
     jobs = asyncio.run(scraper.fetch_jobs())
     print(jobs)
     breakpoint()
+    
