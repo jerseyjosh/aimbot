@@ -196,7 +196,7 @@ class FirstRecruitmentScraper:
     def parse_latest_jobs(
         cls,
         soup: BeautifulSoup,
-        location: str | None = "",
+        location: Optional[str] = "",
         job_types: Optional[list[str]] = None,
         limit: Optional[int] = None,
     ) -> list[JobListing]:
@@ -376,7 +376,7 @@ class FirstRecruitmentScraper:
 
     async def fetch_jobs(
         self,
-        location: str | None = None,
+        location: Optional[str] = None,
         job_types: Optional[list[str]] = None,
         sector: str = None,
         limit: Optional[int] = 5,
