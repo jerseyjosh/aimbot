@@ -35,6 +35,32 @@ class WeatherScraper:
     def Gsy(cls):
         return cls(region=WeatherRegion.GSY)
 
+    @staticmethod
+    def parse_tides(soup: BeautifulSoup) -> str:
+        """Build the tide summary from a BBC tide-table page.
+
+        The tide type (High/Low) is the first data cell of each row; the table
+        header and any layout rows only use ``<th>`` and are skipped. Rows such
+        as "Current tide" carry a type that is neither High nor Low and are
+        intentionally ignored.
+        """
+        low_tides = []
+        high_tides = []
+        for row in soup.find_all('tr'):
+            cells = row.find_all('td')
+            if len(cells) < 2:
+                continue
+            tide_type = cells[0].get_text(" ", strip=True).lower()
+            time_match = re.match(r'\d{1,2}:\d{2}', cells[1].get_text(" ", strip=True))
+            if not time_match:
+                continue
+            time = datetime.strptime(time_match.group(0), "%H:%M").strftime("%I:%M %p")
+            if tide_type == 'low':
+                low_tides.append(time)
+            elif tide_type == 'high':
+                high_tides.append(time)
+        return f"Low tides at {', '.join(low_tides)}, with high tides at {', '.join(high_tides)}".strip()
+
     async def get_weather(self) -> WeatherResponse:
         """Fetch the weather and tides from BBC"""
         # extract urls
@@ -55,19 +81,7 @@ class WeatherScraper:
             async with session.get(tides_url) as response:
                 response.raise_for_status()
                 soup = BeautifulSoup(await response.text(), 'html.parser')
-                rows = soup.find_all('tr')
-                low_tides = []
-                high_tides = []
-                for row in rows[:5]:
-                    if row.find('th') and 'low' in row.find('th').text.lower():
-                        time = row.find('td').text[:5]
-                        time = datetime.strptime(time, "%H:%M").strftime("%I:%M %p")
-                        low_tides.append(time)
-                    elif row.find('th') and 'high' in row.find('th').text.lower():
-                        time = row.find('td').text[:5]
-                        time = datetime.strptime(time, "%H:%M").strftime("%I:%M %p")
-                        high_tides.append(time)
-                tides = f"Low tides at {', '.join(low_tides)}, with high tides at {', '.join(high_tides)}"
+                tides = self.parse_tides(soup)
         
         return WeatherResponse(
             weather=weather.strip(),
