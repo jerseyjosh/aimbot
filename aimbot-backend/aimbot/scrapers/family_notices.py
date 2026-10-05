@@ -1,4 +1,3 @@
-import aiohttp
 import asyncio
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
@@ -7,6 +6,7 @@ import re
 from typing import Optional
 
 from aimbot.models.news import FamilyNotice
+from aimbot.scrapers.config import create_client_session
 
 # Asynchronous Scraper Class
 class FamilyNoticesScraper:
@@ -18,7 +18,7 @@ class FamilyNoticesScraper:
 
     async def fetch(self, url, params):
         """Fetch data with provided parameters."""
-        async with aiohttp.ClientSession() as session:
+        async with create_client_session() as session:
             async with session.get(url, params=params) as response:
                 response.raise_for_status()
                 return await response.json()

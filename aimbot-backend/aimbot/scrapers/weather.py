@@ -7,7 +7,8 @@ from unittest import result
 
 from bs4 import BeautifulSoup
 from bs4.element import Tag
-import aiohttp
+
+from aimbot.scrapers.config import create_client_session
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class WeatherScraper:
         # extract urls
         weather_url, tides_url = self.region.value
         
-        async with aiohttp.ClientSession() as session:
+        async with create_client_session() as session:
             # Get weather
             async with session.get(weather_url) as response:
                 response.raise_for_status()

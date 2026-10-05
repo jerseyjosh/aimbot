@@ -6,9 +6,8 @@ import time
 import random
 
 from bs4 import BeautifulSoup
-import aiohttp
 
-from aimbot.scrapers.config import HEADERS
+from aimbot.scrapers.config import HEADERS, create_client_session
 from aimbot.scrapers.news.base import BaseScraper, ScraperResponse
 from aimbot.models.news import NewsStory
 
@@ -36,7 +35,7 @@ class BEWordpress(BaseScraper):
         url_with_cache_buster = f"{url}{cache_buster}"
         
         async with self.limiter:
-            async with aiohttp.ClientSession() as client:
+            async with create_client_session() as client:
                 async with client.get(url_with_cache_buster, headers=HEADERS) as response:
                     response.raise_for_status()
                     return await response.json()

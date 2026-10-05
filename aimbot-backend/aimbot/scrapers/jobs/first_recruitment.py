@@ -28,6 +28,8 @@ import asyncio
 from typing import Optional
 from urllib.parse import urljoin
 
+from aimbot.scrapers.config import create_client_session
+
 
 logger = logging.getLogger(__name__)
 
@@ -287,7 +289,7 @@ class FirstRecruitmentScraper:
         # fetch data
         try:
             timeout = aiohttp.ClientTimeout(total=30)
-            async with aiohttp.ClientSession(
+            async with create_client_session(
                 headers=self.HEADERS,
                 timeout=timeout,
                 cookie_jar=aiohttp.CookieJar(unsafe=False),
@@ -391,7 +393,7 @@ class FirstRecruitmentScraper:
 
         try:
             timeout = aiohttp.ClientTimeout(total=30)
-            async with aiohttp.ClientSession(headers=self.HEADERS, timeout=timeout) as session:
+            async with create_client_session(headers=self.HEADERS, timeout=timeout) as session:
                 async with session.get(f"{self.BASE_URL}/", allow_redirects=True) as response:
                     response.raise_for_status()
                     html = await response.text()

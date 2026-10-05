@@ -1,5 +1,13 @@
 # Svelte / FastAPI All Island Media Automation Site
 
+# Scraping proxy
+
+All scraper HTTP traffic is routed through a single proxy so the server can
+egress via a Raspberry Pi at home running tinyproxy, reached over Tailscale.
+Set `SCRAPER_PROXY_URL=http://<pi-tailnet-host>:8888` (see
+`aimbot-backend/README.md` for full setup). Scrapers create their sessions via
+`aimbot.scrapers.config.create_client_session()`.
+
 # Changelog
 - 2026-03-20 [3h]
     - Added endpoints for Jersey and Guernsey Connect Insider emails, created insider jinja templates, added new endpoints to backend.

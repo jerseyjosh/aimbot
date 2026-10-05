@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Optional
-import aiohttp
 import random
 import time
 import asyncio
@@ -10,7 +9,7 @@ import logging
 from bs4 import BeautifulSoup
 from aiolimiter import AsyncLimiter
 
-from aimbot.scrapers.config import HEADERS
+from aimbot.scrapers.config import HEADERS, create_client_session
 from aimbot.models.news import NewsStory, FamilyNotice
 
 logger = logging.getLogger(__name__)
@@ -53,7 +52,7 @@ class BaseScraper(ABC):
         url_with_cache_buster = f"{url}{cache_buster}"
         
         async with self.limiter:
-            async with aiohttp.ClientSession() as client:
+            async with create_client_session() as client:
                 async with client.get(url_with_cache_buster, headers=HEADERS) as response:
                     response.raise_for_status()
                     return ScraperResponse(url=url, soup=BeautifulSoup(await response.text(), 'html.parser'))
